@@ -39,3 +39,15 @@ export function authorize(...roles) {
     next();
   };
 }
+
+/**
+ * Is Admin middleware
+ */
+export function isAdmin(req, res, next) {
+  if (req.user.roleId !== 1) {
+    return res.status(403).json({
+      error: "Chỉ admin mới có quyền truy cập",
+    });
+  }
+  next();
+}

@@ -42,7 +42,10 @@ export async function login(req, res, next) {
       data: result,
     });
   } catch (error) {
-    next(error);
+    res.json({
+      error: "Đăng nhập thất bại",
+      message: error.message,
+    });
   }
 }
 
@@ -90,7 +93,7 @@ export async function changePassword(req, res, next) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    await UserService.changePassword(req.user.id, req.body);
+    await UserService.changePassword(req.user.id, req.user.email, req.body);
     res.json({
       message: "Đổi mật khẩu thành công",
     });
@@ -107,7 +110,7 @@ export async function getUsers(req, res, next) {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
 
-    const result = await UserService.getUsers(page, limit);
+    const result = await UserService.getAllUsers(page, limit);
     res.json({
       data: result.users,
       pagination: result.pagination,

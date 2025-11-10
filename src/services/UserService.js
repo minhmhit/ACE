@@ -61,6 +61,18 @@ export async function login(email, password) {
 }
 
 /**
+ * Service lấy thông tin cá nhân
+ */
+export async function getUserById(userId) {
+  const user = await UserModel.getUserById(userId);
+  if (!user) {
+    throw new Error("Không tìm thấy user");
+  }
+  delete user.password;
+  return user;
+}
+
+/**
  * Service cập nhật thông tin cá nhân
  */
 export async function updateProfile(userId, updateData) {
@@ -86,9 +98,9 @@ export async function updateProfile(userId, updateData) {
 /**
  * Service đổi mật khẩu
  */
-export async function changePassword(userId, { currentPassword, newPassword }) {
+export async function changePassword(userId, userEmail, { currentPassword, newPassword }) {
   // Kiểm tra user tồn tại
-  const user = await UserModel.getUserByEmail(user.email);
+  const user = await UserModel.getUserByEmail(userEmail);
   if (!user) {
     throw new Error("Không tìm thấy user");
   }
@@ -110,8 +122,8 @@ export async function changePassword(userId, { currentPassword, newPassword }) {
 /**
  * Service lấy danh sách users (admin only)
  */
-export async function getUsers(page, limit) {
-  return UserModel.getUsers(page, limit);
+export async function getAllUsers(page, limit) {
+  return UserModel.getAllUsers(page, limit);
 }
 
 /**

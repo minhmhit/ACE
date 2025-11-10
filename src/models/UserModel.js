@@ -5,7 +5,7 @@ import { pool } from "../config/db.js";
  */
 export async function getUserByEmail(email) {
   const [rows] = await pool.query(
-    "SELECT id, email, name, roleId, isActive FROM users WHERE email = ?",
+    "SELECT id, email, password, name, roleId, isActive FROM users WHERE email = ?",
     [email]
   );
   return rows[0];
@@ -42,4 +42,38 @@ export async function updateUser(id, data) {
     id,
   ]);
   return result.affectedRows > 0;
+}
+
+/**
+ * Update user password
+ */
+export async function updatePassword(id, newPassword) {
+    const [result] = await pool.query("UPDATE users SET password = ? WHERE id = ?", [
+        newPassword,
+        id,
+    ]);
+    return result.affectedRows > 0;
+}
+
+/**
+ * Lấy danh sách tất cả users với phân trang (admin only)
+ */
+export async function getAllUsers(page, limit) {
+    const offset = (page - 1) * limit;
+    const [rows] = await pool.query(
+        `SELECT u.id, u.name, u.email, u.isActive, r.name as roleName
+         FROM users u JOIN roles r ON u.roleId = r.id 
+         LIMIT ? OFFSET ?`,
+        [limit, offset]
+    );
+    const [countResult] = await pool.query("SELECT COUNT(*) as count FROM users");
+    const total = countResult[0].count;
+    return {
+        users: rows,
+        pagination: {
+            total,
+            page,
+            limit,
+        },
+    };
 }
