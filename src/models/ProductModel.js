@@ -75,3 +75,12 @@ export async function updateProduct(id, data) {
   ]);
   return result.affectedRows > 0;
 }
+
+/**
+ * Xoá sản phẩm
+ */
+export async function deleteProduct(id) {
+  const [result] = await pool.query("UPDATE products SET isActive = 0 WHERE id = ?", [id]);
+  return result.affectedRows > 0;
+}
+

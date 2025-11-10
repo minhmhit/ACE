@@ -11,14 +11,14 @@ import {
 const router = express.Router();
 
 // Public routes
-router.get("/products", ProductController.getProducts);
-router.get("/products/search", ProductController.searchProducts);
-router.get("/products/:id", ProductController.getProductById);
-router.get("/products/:id/variants", ProductController.getProductVariants);
+router.get("/", ProductController.getProducts);
+router.get("/search", ProductController.searchProducts);
+router.get("/:id", ProductController.getProductById);
+router.get("/:id/variants", ProductController.getProductVariants);
 
 // Admin only routes
 router.post(
-  "/products",
+  "/add",
   authenticate,
   authorize(1),
   createProductValidation,
@@ -26,7 +26,7 @@ router.post(
 );
 
 router.put(
-  "/products/:id",
+  "/update/:id",
   authenticate,
   authorize(1),
   updateProductValidation,
@@ -34,7 +34,7 @@ router.put(
 );
 
 router.delete(
-  "/products/:id",
+  "/delete/:id",
   authenticate,
   authorize(1),
   ProductController.deleteProduct

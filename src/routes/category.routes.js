@@ -9,12 +9,12 @@ import {
 const router = express.Router();
 
 // Public routes
-router.get("/categories", CategoryController.getCategories);
-router.get("/categories/:id", CategoryController.getCategoryById);
+router.get("/", CategoryController.getCategories);
+router.get("/:id", CategoryController.getCategoryById);
 
 // Admin only routes
 router.post(
-  "/categories",
+  "/add",
   authenticate,
   authorize([1]),
   createCategoryValidation,
@@ -22,7 +22,7 @@ router.post(
 );
 
 router.put(
-  "/categories/:id",
+  "/update/:id",
   authenticate,
   authorize([1]),
   updateCategoryValidation,
@@ -30,7 +30,7 @@ router.put(
 );
 
 router.delete(
-  "/categories/:id",
+  "/delete/:id",
   authenticate,
   authorize([1]),
   CategoryController.deleteCategory

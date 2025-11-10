@@ -12,6 +12,7 @@ import supplierRoutes from "./routes/supplier.routes.js";
 import couponRoutes from "./routes/coupon.routes.js";
 import importRoutes from "./routes/import.routes.js";
 import receiptRoutes from "./routes/receipt.routes.js";
+import variantRoutes from "./routes/variant.routes.js";
 
 // Load env vars
 dotenv.config();
@@ -23,9 +24,9 @@ app.use(cors());
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
-app.use("/api/v1/", authRoutes);
-app.use("/api/v1/", productRoutes);
-app.use("/api/v1/", categoryRoutes);
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/product", productRoutes);
+app.use("/api/v1/category", categoryRoutes);
 app.use("/api/v1/cart", cartRoutes);
 app.use("/api/v1/orders", orderRoutes);
 app.use("/api/v1/inventory", inventoryRoutes);
@@ -33,6 +34,7 @@ app.use("/api/v1/suppliers", supplierRoutes);
 app.use("/api/v1/coupons", couponRoutes);
 app.use("/api/v1/imports", importRoutes);
 app.use("/api/v1/receipts", receiptRoutes);
+app.use("/api/v1/variants", variantRoutes);
 // Routes
 app.get("/", (req, res) => {
   res.json({ message: "Coffee Shop API" });

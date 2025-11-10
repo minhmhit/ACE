@@ -12,8 +12,8 @@ import {
 const router = express.Router();
 
 // Public routes
-router.post("/auth/register", registerValidation, UserController.register);
-router.post("/auth/login", loginValidation, UserController.login);
+router.post("/register", registerValidation, UserController.register);
+router.post("/login", loginValidation, UserController.login);
 
 // Protected routes
 router.get("/users/profile", authenticate, UserController.getProfile);
