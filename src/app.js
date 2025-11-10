@@ -6,6 +6,9 @@ import authRoutes from "./routes/user.routes.js";
 import productRoutes from "./routes/product.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import cartRoutes from "./routes/cart.routes.js";
+import orderRoutes from "./routes/order.routes.js";
+import inventoryRoutes from "./routes/inventory.routes.js";
+import supplierRoutes from "./routes/supplier.routes.js";
 
 // Load env vars
 dotenv.config();
@@ -21,6 +24,9 @@ app.use("/api/v1/", authRoutes);
 app.use("/api/v1/", productRoutes);
 app.use("/api/v1/", categoryRoutes);
 app.use("/api/v1/cart", cartRoutes);
+app.use("/api/v1/orders", orderRoutes);
+app.use("/api/v1/inventory", inventoryRoutes);
+app.use("/api/v1/suppliers", supplierRoutes);
 
 // Routes
 app.get("/", (req, res) => {
