@@ -1,5 +1,5 @@
 import ReceiptModel from "../models/ReceiptModel.js";
-import pool from "../config/db.js";
+import {pool} from "../config/db.js";
 
 class ReceiptService {
   // Tạo phiếu thu mới và cập nhật trạng thái đơn hàng

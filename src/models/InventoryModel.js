@@ -1,4 +1,4 @@
-import pool from "../config/db.js";
+import {pool} from "../config/db.js";
 
 class InventoryModel {
   // Lấy danh sách tồn kho tất cả sản phẩm

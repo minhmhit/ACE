@@ -1,5 +1,5 @@
 import OrderModel from "../models/OrderModel.js";
-import CartModel from "../models/CartModel.js";
+import * as CartModel from "../models/CartModel.js";
 
 class OrderService {
   // Tạo đơn hàng mới từ giỏ hàng

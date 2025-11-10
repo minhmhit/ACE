@@ -5,7 +5,7 @@ import {
   verifyCouponValidation,
 } from "../middlewares/couponValidation.js";
 import { validateResult } from "../middlewares/validator.js";
-import { verifyToken, isAdmin } from "../middlewares/auth.js";
+import { authenticate, authorize } from "../middlewares/auth.js";
 
 const router = express.Router();
 
@@ -18,7 +18,7 @@ router.post(
 );
 
 // Admin routes
-const adminAuth = [verifyToken, isAdmin];
+const adminAuth = [authenticate, authorize(1)];
 
 router.get("/", adminAuth, CouponController.getAllCoupons);
 

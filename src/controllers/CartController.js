@@ -88,3 +88,4 @@ export async function clearCart(req, res, next) {
     next(error);
   }
 }
+

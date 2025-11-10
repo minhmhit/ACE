@@ -5,12 +5,12 @@ import {
   checkInventoryValidation,
 } from "../middlewares/inventoryValidation.js";
 import { validateResult } from "../middlewares/validator.js";
-import { verifyToken, isWarehouseStaff } from "../middlewares/auth.js";
+import { authenticate, authorize} from "../middlewares/auth.js";
 
 const router = express.Router();
 
 // Middleware xác thực cho nhân viên kho
-const warehouseAuth = [verifyToken, isWarehouseStaff];
+const warehouseAuth = [authenticate, authorize(2)];
 
 // Xem tồn kho tất cả sản phẩm
 router.get("/", warehouseAuth, InventoryController.getAllInventory);

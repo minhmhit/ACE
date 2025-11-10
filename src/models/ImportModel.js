@@ -1,4 +1,4 @@
-import pool from "../config/db.js";
+import {pool} from "../config/db.js";
 
 class ImportModel {
   // Lấy danh sách phiếu nhập hàng

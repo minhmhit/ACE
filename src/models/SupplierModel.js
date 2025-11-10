@@ -1,4 +1,4 @@
-import pool from "../config/db.js";
+import {pool} from "../config/db.js";
 
 class SupplierModel {
   // Lấy danh sách nhà cung cấp

@@ -5,32 +5,32 @@ import {
   updateOrderStatusValidation,
 } from "../middlewares/orderValidation.js";
 import { validateResult } from "../middlewares/validator.js";
-import { verifyToken, isAdmin } from "../middlewares/auth.js";
+import { authenticate, authorize } from "../middlewares/auth.js";
 
 const router = express.Router();
 
 // User routes
 router.post(
   "/",
-  verifyToken,
+  authenticate,
   createOrderValidation,
   validateResult,
   OrderController.createOrder
 );
 
-router.get("/", verifyToken, OrderController.getOrders);
+router.get("/", authenticate, OrderController.getOrders);
 
-router.get("/:id", verifyToken, OrderController.getOrderById);
+router.get("/:id", authenticate, OrderController.getOrderById);
 
-router.put("/:id/cancel", verifyToken, OrderController.cancelOrder);
+router.put("/:id/cancel", authenticate, OrderController.cancelOrder);
 
 // Admin routes
-router.get("/admin/all", verifyToken, isAdmin, OrderController.getAllOrders);
+router.get("/admin/all", authenticate,authorize(1), OrderController.getAllOrders);
 
 router.put(
   "/:id/status",
-  verifyToken,
-  isAdmin,
+  authenticate,
+  authorize(1),
   updateOrderStatusValidation,
   validateResult,
   OrderController.updateOrderStatus

@@ -9,7 +9,7 @@ import { validateRequest } from "../middlewares/validateRequest.js";
 const router = express.Router();
 
 // Lấy danh sách phiếu nhập hàng (có phân trang và lọc)
-router.get("/", ImportController.getImports);
+router.get("/", ImportController.getAllImports);
 
 // Lấy chi tiết một phiếu nhập hàng
 router.get("/:id", ImportController.getImportById);

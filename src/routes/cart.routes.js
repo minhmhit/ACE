@@ -1,21 +1,21 @@
 import express from "express";
-import CartController from "../controllers/CartController.js";
+import * as CartController from "../controllers/CartController.js";
 import {
   addToCartValidation,
   updateCartItemValidation,
 } from "../middlewares/cartValidation.js";
-import { verifyToken } from "../middlewares/auth.js";
+import { authenticate } from "../middlewares/auth.js";
 import { validateResult } from "../middlewares/validator.js";
 
 const router = express.Router();
 
 // Route xem giỏ hàng
-router.get("/", verifyToken, CartController.getCart);
+router.get("/", authenticate, CartController.getCart);
 
 // Route thêm vào giỏ hàng
 router.post(
   "/add",
-  verifyToken,
+  authenticate,
   addToCartValidation,
   validateResult,
   CartController.addToCart
@@ -24,7 +24,7 @@ router.post(
 // Route cập nhật số lượng sản phẩm trong giỏ
 router.put(
   "/update/:cartItemId",
-  verifyToken,
+  authenticate,
   updateCartItemValidation,
   validateResult,
   CartController.updateCartItem
@@ -33,11 +33,11 @@ router.put(
 // Route xóa sản phẩm khỏi giỏ
 router.delete(
   "/remove/:cartItemId",
-  verifyToken,
+  authenticate,
   CartController.removeFromCart
 );
 
 // Route xóa toàn bộ giỏ hàng
-router.delete("/clear", verifyToken, CartController.clearCart);
+router.delete("/clear", authenticate, CartController.clearCart);
 
 export default router;

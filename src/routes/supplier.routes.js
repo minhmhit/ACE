@@ -2,12 +2,12 @@ import express from "express";
 import SupplierController from "../controllers/SupplierController.js";
 import supplierValidation from "../middlewares/supplierValidation.js";
 import { validateResult } from "../middlewares/validator.js";
-import { verifyToken, isAdmin } from "../middlewares/auth.js";
+import { authenticate, authorize } from "../middlewares/auth.js";
 
 const router = express.Router();
 
 // Middleware xác thực cho admin
-const adminAuth = [verifyToken, isAdmin];
+const adminAuth = [authenticate, authorize(1)];
 
 // Danh sách nhà cung cấp
 router.get("/", adminAuth, SupplierController.getAllSuppliers);
