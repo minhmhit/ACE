@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1:3306
--- Thời gian đã tạo: Th10 10, 2025 lúc 12:08 PM
+-- Thời gian đã tạo: Th10 10, 2025 lúc 01:50 PM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.2.12
 
@@ -78,6 +78,35 @@ CREATE TABLE `coupons` (
 -- --------------------------------------------------------
 
 --
+-- Cấu trúc bảng cho bảng `imports`
+--
+
+CREATE TABLE `imports` (
+  `id` int(11) NOT NULL,
+  `supplier_id` int(11) NOT NULL,
+  `total_amount` decimal(10,2) DEFAULT 0.00,
+  `import_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `payment_status` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `import_details`
+--
+
+CREATE TABLE `import_details` (
+  `id` int(11) NOT NULL,
+  `import_id` int(11) NOT NULL,
+  `product_id_imports` int(11) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `unit_price` decimal(10,2) NOT NULL,
+  `subtotal` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `unit_price`) STORED
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Cấu trúc bảng cho bảng `inventories`
 --
 
@@ -136,6 +165,21 @@ CREATE TABLE `products` (
 -- --------------------------------------------------------
 
 --
+-- Cấu trúc bảng cho bảng `receipts`
+--
+
+CREATE TABLE `receipts` (
+  `id` int(11) NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `order_id` int(11) NOT NULL,
+  `payment_method` enum('cash','bank_transfer','credit_card','momo') NOT NULL,
+  `description` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Cấu trúc bảng cho bảng `roles`
 --
 
@@ -185,6 +229,18 @@ CREATE TABLE `users` (
   `isActive` tinyint(1) NOT NULL DEFAULT 1,
   `roleId` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `users`
+--
+
+INSERT INTO `users` (`id`, `createdAt`, `email`, `name`, `password`, `isActive`, `roleId`) VALUES
+(2, '2025-11-10 18:32:30.396', 'a@gmail.com', 'minh', '$2a$10$lEDy2Qp8mZi.c8RNr6CDXutcHdP.lLrhP1yJSfEzAaeiez4Yu1Fne', 1, 1),
+(3, '2025-11-10 18:40:20.397', 'b@gmail.com', 'minhmh1', '$2a$10$aBR3dYJtSnGbZ2KCvT.OyewgGbHsAWL2o7/4De6Tvf9D28V.OGxX6', 1, 2),
+(4, '2025-11-10 18:40:29.251', 'c@gmail.com', 'minhmh2', '$2a$10$RKCnZ6Lcr.xgwcXXXW0NV.r1uos/SgPUKafy28.FD5mCCLs0yHgVO', 1, 3),
+(5, '2025-11-10 18:40:38.727', 'd@gmail.com', 'minhmh3', '$2a$10$NXSJUwY200O5VhotBI0MK.d36eVQRTAavT38NbHRv9Gez2q.5VEdG', 1, 4),
+(6, '2025-11-10 18:40:46.491', 'e@gmail.com', 'minhmh4', '$2a$10$JCepwS4zHQl/VGf5t8QYpOLGWNxPGd1xidz44YR.mJn6LLhvMC9si', 1, 5),
+(7, '2025-11-10 18:42:25.874', 'f@gmail.com', 'minhmh5', '$2a$10$N2d8266taTu7Rr/6116W3eENd1h0ZRUEvwYGmziwx8VODhYgvJvfW', 0, 2);
 
 -- --------------------------------------------------------
 
@@ -265,6 +321,21 @@ ALTER TABLE `coupons`
   ADD UNIQUE KEY `coupons_code_key` (`code`);
 
 --
+-- Chỉ mục cho bảng `imports`
+--
+ALTER TABLE `imports`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `supplier_id` (`supplier_id`);
+
+--
+-- Chỉ mục cho bảng `import_details`
+--
+ALTER TABLE `import_details`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `import_id` (`import_id`),
+  ADD KEY `product_id_imports` (`product_id_imports`);
+
+--
 -- Chỉ mục cho bảng `inventories`
 --
 ALTER TABLE `inventories`
@@ -295,6 +366,13 @@ ALTER TABLE `products`
   ADD PRIMARY KEY (`id`),
   ADD KEY `products_categoryId_fkey` (`categoryId`),
   ADD KEY `products_supplierId_fkey` (`supplierId`);
+
+--
+-- Chỉ mục cho bảng `receipts`
+--
+ALTER TABLE `receipts`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `order_id` (`order_id`);
 
 --
 -- Chỉ mục cho bảng `roles`
@@ -360,6 +438,18 @@ ALTER TABLE `coupons`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT cho bảng `imports`
+--
+ALTER TABLE `imports`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT cho bảng `import_details`
+--
+ALTER TABLE `import_details`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT cho bảng `inventories`
 --
 ALTER TABLE `inventories`
@@ -384,6 +474,12 @@ ALTER TABLE `products`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT cho bảng `receipts`
+--
+ALTER TABLE `receipts`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT cho bảng `roles`
 --
 ALTER TABLE `roles`
@@ -399,7 +495,7 @@ ALTER TABLE `suppliers`
 -- AUTO_INCREMENT cho bảng `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT cho bảng `variants`
@@ -432,6 +528,19 @@ ALTER TABLE `categories`
   ADD CONSTRAINT `categories_parentId_fkey` FOREIGN KEY (`parentId`) REFERENCES `categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
+-- Các ràng buộc cho bảng `imports`
+--
+ALTER TABLE `imports`
+  ADD CONSTRAINT `imports_ibfk_1` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE CASCADE;
+
+--
+-- Các ràng buộc cho bảng `import_details`
+--
+ALTER TABLE `import_details`
+  ADD CONSTRAINT `import_details_ibfk_1` FOREIGN KEY (`import_id`) REFERENCES `imports` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `import_details_ibfk_2` FOREIGN KEY (`product_id_imports`) REFERENCES `products` (`id`) ON DELETE CASCADE;
+
+--
 -- Các ràng buộc cho bảng `inventories`
 --
 ALTER TABLE `inventories`
@@ -458,6 +567,12 @@ ALTER TABLE `order_items`
 ALTER TABLE `products`
   ADD CONSTRAINT `products_categoryId_fkey` FOREIGN KEY (`categoryId`) REFERENCES `categories` (`id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `products_supplierId_fkey` FOREIGN KEY (`supplierId`) REFERENCES `suppliers` (`id`) ON UPDATE CASCADE;
+
+--
+-- Các ràng buộc cho bảng `receipts`
+--
+ALTER TABLE `receipts`
+  ADD CONSTRAINT `receipts_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`);
 
 --
 -- Các ràng buộc cho bảng `users`

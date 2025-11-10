@@ -10,6 +10,7 @@ import orderRoutes from "./routes/order.routes.js";
 import inventoryRoutes from "./routes/inventory.routes.js";
 import supplierRoutes from "./routes/supplier.routes.js";
 import couponRoutes from "./routes/coupon.routes.js";
+import importRoutes from "./routes/import.routes.js"
 
 // Load env vars
 dotenv.config();
@@ -29,11 +30,12 @@ app.use("/api/v1/orders", orderRoutes);
 app.use("/api/v1/inventory", inventoryRoutes);
 app.use("/api/v1/suppliers", supplierRoutes);
 app.use("/api/v1/coupons", couponRoutes);
-
+app.use("api/v1/imports", importRoutes);
 // Routes
 app.get("/", (req, res) => {
   res.json({ message: "Coffee Shop API" });
 });
+
 
 // Error handler
 // app.use(errorHandler);
