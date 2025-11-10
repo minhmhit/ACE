@@ -4,6 +4,7 @@ import cors from "cors";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import authRoutes from "./routes/user.routes.js";
 import productRoutes from "./routes/product.routes.js";
+import categoryRoutes from "./routes/category.routes.js";
 
 // Load env vars
 dotenv.config();
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/api/v1/", authRoutes);
 app.use("/api/v1/", productRoutes);
+app.use("/api/v1/", categoryRoutes);
 
 // Routes
 app.get("/", (req, res) => {
