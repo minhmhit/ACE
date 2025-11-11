@@ -222,14 +222,15 @@ class OrderModel {
   }
 
   // Admin: Cập nhật trạng thái đơn hàng
+  // Admin: Cập nhật trạng thái đơn hàng
   static async updateOrderStatus(orderId, newStatus) {
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
 
-      // Lấy trạng thái hiện tại
+      // Lấy thông tin đơn hàng hiện tại
       const [order] = await conn.query(
-        `SELECT status FROM orders WHERE id = ?`,
+        `SELECT status, totalAmount FROM orders WHERE id = ?`,
         [orderId]
       );
 
@@ -238,6 +239,7 @@ class OrderModel {
       }
 
       const oldStatus = order[0].status;
+      const totalAmount = order[0].totalAmount;
 
       // Nếu chuyển từ trạng thái khác sang CANCELLED
       if (oldStatus !== "CANCELLED" && newStatus === "CANCELLED") {
@@ -251,9 +253,27 @@ class OrderModel {
         for (const item of items) {
           await conn.query(
             `UPDATE inventories 
-             SET quantity = quantity + ? 
-             WHERE productId = ?`,
+           SET quantity = quantity + ? 
+           WHERE productId = ?`,
             [item.quantity, item.productId]
+          );
+        }
+      }
+
+      // Nếu chuyển sang COMPLETED, tạo hóa đơn
+      if (oldStatus !== "COMPLETED" && newStatus === "COMPLETED") {
+        // Kiểm tra xem đã có hóa đơn chưa
+        const [existingReceipt] = await conn.query(
+          `SELECT id FROM receipts WHERE order_id = ?`,
+          [orderId]
+        );
+
+        // Nếu chưa có hóa đơn thì tạo mới
+        if (existingReceipt.length === 0) {
+          await conn.query(
+            `INSERT INTO receipts (order_id, amount, payment_method, created_at)
+           VALUES (?, ?, 'CASH', NOW())`,
+            [orderId, totalAmount]
           );
         }
       }
