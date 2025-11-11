@@ -1,5 +1,5 @@
 import VariantModel from "../models/VariantModel.js";
-import ProductModel from "../models/ProductModel.js";
+import * as ProductModel from "../models/ProductModel.js";
 
 class VariantService {
   // Lấy tất cả variants của một sản phẩm

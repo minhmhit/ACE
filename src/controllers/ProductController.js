@@ -4,18 +4,18 @@ import * as ProductService from "../services/ProductService.js";
 /**
  * Controller lấy danh sách sản phẩm
  */
-export async function getProducts(req, res, next) {
+export async function getAllProducts(req, res, next) {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const categoryId = req.query.categoryId
-      ? parseInt(req.query.categoryId)
-      : null;
+    // const page = parseInt(req.query.page) || 1;
+    // const limit = parseInt(req.query.limit) || 10;
+    // const categoryId = req.query.categoryId
+    //   ? parseInt(req.query.categoryId)
+    //   : null;
 
-    const result = await ProductService.getProducts(page, limit, categoryId);
+    const result = await ProductService.getProducts();
     res.json({
-      data: result.products,
-      pagination: result.pagination,
+      message: "Lấy danh sách sản phẩm thành công",
+      data: result
     });
   } catch (error) {
     next(error);
@@ -48,8 +48,9 @@ export async function searchProducts(req, res, next) {
 
     const result = await ProductService.searchProducts(keyword, page, limit);
     res.json({
-      data: result.products,
-      pagination: result.pagination,
+      message:"Tìm kiếm sản phẩm thành công",
+      data: result,
+      
     });
   } catch (error) {
     next(error);

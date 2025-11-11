@@ -3,8 +3,8 @@ import * as ProductModel from "../models/ProductModel.js";
 /**
  * Service lấy danh sách sản phẩm
  */
-export async function getProducts(page, limit, categoryId) {
-  return ProductModel.getProducts(page, limit, categoryId);
+export async function getProducts() {
+  return ProductModel.getProducts();
 }
 
 /**

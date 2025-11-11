@@ -11,10 +11,9 @@ import {
 const router = express.Router();
 
 // Public routes
-router.get("/", ProductController.getProducts);
+router.get("/", ProductController.getAllProducts);
 router.get("/search", ProductController.searchProducts);
 router.get("/:id", ProductController.getProductById);
-router.get("/:id/variants", ProductController.getProductVariants);
 
 // Admin only routes
 router.post(
