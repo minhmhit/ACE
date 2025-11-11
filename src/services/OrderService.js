@@ -2,41 +2,73 @@ import OrderModel from "../models/OrderModel.js";
 import * as CartModel from "../models/CartModel.js";
 
 class OrderService {
-  // Tạo đơn hàng mới từ giỏ hàng
+  // Tạo đơn hàng mới từ cart items được gửi lên
   static async createOrder(userId, orderData) {
     try {
-      // Lấy thông tin giỏ hàng
+      // Validate cartItems
+      if (
+        !orderData.cartItems ||
+        !Array.isArray(orderData.cartItems) ||
+        orderData.cartItems.length === 0
+      ) {
+        throw new Error("Danh sách sản phẩm không được để trống");
+      }
+
+      // Lấy thông tin giỏ hàng của user
       const cart = await CartModel.getCart(userId);
       if (!cart || cart.items.length === 0) {
         throw new Error("Giỏ hàng trống");
       }
 
-      // Tính tổng tiền
-      let totalAmount = cart.items.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0
-      );
+      // Chuẩn bị dữ liệu để tạo order
+      const validCartItems = [];
 
-      // Chuẩn bị dữ liệu đơn hàng
-      const orderItems = cart.items.map((item) => ({
-        productId: item.product_id,
-        variantId: item.variant_id,
-        quantity: item.quantity,
-        price: item.price,
-      }));
+      for (const requestItem of orderData.cartItems) {
+        // Tìm item trong giỏ hàng
+        const cartItem = cart.items.find((item) => {
+          if (requestItem.variantId) {
+            return (
+              item.id === requestItem.cartItemId &&
+              item.productId === requestItem.productId &&
+              item.variantId === requestItem.variantId
+            );
+          } else {
+            return (
+              item.id === requestItem.cartItemId &&
+              item.productId === requestItem.productId
+            );
+          }
+        });
+
+        if (!cartItem) {
+          throw new Error(`Không tìm thấy sản phẩm trong giỏ hàng`);
+        }
+
+        // Kiểm tra số lượng yêu cầu không vượt quá số lượng trong giỏ
+        if (requestItem.quantity > cartItem.quantity) {
+          throw new Error(
+            `Số lượng sản phẩm "${cartItem.productName}" vượt quá số lượng trong giỏ hàng`
+          );
+        }
+
+        validCartItems.push({
+          cartItemId: cartItem.id,
+          productId: cartItem.productId,
+          variantId: cartItem.variantId || null,
+          quantity: requestItem.quantity,
+          unitPrice: cartItem.unitPrice,
+          cartQuantity: cartItem.quantity, // Số lượng hiện tại trong giỏ
+        });
+      }
 
       // Tạo đơn hàng
       const orderId = await OrderModel.createOrder(
         userId,
         {
-          totalAmount,
-          couponId: orderData.couponId,
+          couponId: orderData.couponId || null,
         },
-        orderItems
+        validCartItems
       );
-
-      // Xóa giỏ hàng sau khi đặt hàng thành công
-      await CartModel.clearCart(userId);
 
       return await OrderModel.getOrderById(orderId);
     } catch (error) {
@@ -104,10 +136,6 @@ class OrderService {
       const order = await OrderModel.getOrderById(orderId);
       if (!order) {
         throw new Error("Không tìm thấy đơn hàng");
-      }
-
-      if (status === "CANCELLED" && order.status !== "PENDING") {
-        throw new Error("Chỉ có thể hủy đơn hàng ở trạng thái chờ xử lý");
       }
 
       const success = await OrderModel.updateOrderStatus(orderId, status);

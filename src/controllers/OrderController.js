@@ -6,7 +6,8 @@ class OrderController {
     try {
       const userId = req.user.id;
       const orderData = {
-        couponId: req.body.couponId,
+        cartItems: req.body.cartItems, // Mảng các sản phẩm từ giỏ hàng
+        couponId: req.body.couponId || null,
       };
 
       const order = await OrderService.createOrder(userId, orderData);
@@ -28,15 +29,17 @@ class OrderController {
       const limit = parseInt(req.query.limit) || 10;
 
       const orders = await OrderService.getOrdersByUser(userId, page, limit);
+
+      const totalCount = orders.length > 0 ? orders[0].total_count : 0;
+
       res.json({
         success: true,
-        data: {
-          orders,
-          pagination: {
-            page,
-            limit,
-            total: orders[0]?.total_count || 0,
-          },
+        data: orders,
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
         },
       });
     } catch (error) {
@@ -48,7 +51,7 @@ class OrderController {
   static async getOrderById(req, res, next) {
     try {
       const orderId = req.params.id;
-      const userId = req.user.role === "admin" ? null : req.user.id;
+      const userId = req.user.roleId === 1 ? null : req.user.id;
 
       const order = await OrderService.getOrderById(orderId, userId);
       res.json({
@@ -82,18 +85,20 @@ class OrderController {
     try {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
-      const status = req.query.status;
+      const status = req.query.status || null;
 
       const orders = await OrderService.getAllOrders(page, limit, status);
+
+      const totalCount = orders.length > 0 ? orders[0].total_count : 0;
+
       res.json({
         success: true,
-        data: {
-          orders,
-          pagination: {
-            page,
-            limit,
-            total: orders[0]?.total_count || 0,
-          },
+        data: orders,
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
         },
       });
     } catch (error) {
