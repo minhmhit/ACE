@@ -1,42 +1,73 @@
-import {pool} from "../config/db.js";
+import { pool } from "../config/db.js";
 
 class SupplierModel {
-  // Lấy danh sách nhà cung cấp
+  // Lấy danh sách nhà cung cấp với phân trang
   static async getAllSuppliers(page = 1, limit = 10) {
     const offset = (page - 1) * limit;
-    const [suppliers] = await pool.query(
-      `SELECT *, 
-              COUNT(*) OVER() as total_count
-       FROM suppliers
-       ORDER BY name
+
+    const [rows] = await pool.query(
+      `SELECT id, name, address, code, contactInfo 
+       FROM suppliers 
+       ORDER BY id DESC 
        LIMIT ? OFFSET ?`,
       [limit, offset]
     );
-    return suppliers;
+
+    const [countResult] = await pool.query(
+      `SELECT COUNT(*) as total FROM suppliers`
+    );
+
+    return {
+      data: rows,
+      pagination: {
+        page,
+        limit,
+        total: countResult[0].total,
+        totalPages: Math.ceil(countResult[0].total / limit),
+      },
+    };
   }
 
-  // Lấy chi tiết nhà cung cấp
+  // Lấy chi tiết nhà cung cấp kèm sản phẩm
   static async getSupplierById(id) {
-    const [supplier] = await pool.query(
-      `SELECT s.*, 
-              COUNT(p.id) as total_products,
-              JSON_ARRAYAGG(JSON_OBJECT('id', p.id, 'name', p.name)) as products
-       FROM suppliers s
-       LEFT JOIN products p ON p.supplierId = s.id
-       WHERE s.id = ?
-       GROUP BY s.id`,
+    const [rows] = await pool.query(
+      `SELECT id, name, address, code, contactInfo 
+       FROM suppliers 
+       WHERE id = ?`,
       [id]
     );
-    return supplier[0];
+
+    if (rows.length === 0) {
+      return null;
+    }
+
+    const supplier = rows[0];
+
+    // Lấy danh sách sản phẩm của nhà cung cấp
+    const [products] = await pool.query(
+      `SELECT id, name, price, imageUrl 
+       FROM products 
+       WHERE supplierId = ?`,
+      [id]
+    );
+
+    supplier.products = products;
+
+    return supplier;
   }
 
   // Kiểm tra mã code đã tồn tại
   static async checkCodeExists(code, excludeId = null) {
-    const [result] = await pool.query(
-      "SELECT id FROM suppliers WHERE code = ? AND id != COALESCE(?, -1)",
-      [code, excludeId]
-    );
-    return result.length > 0;
+    let query = `SELECT id FROM suppliers WHERE code = ?`;
+    let params = [code];
+
+    if (excludeId) {
+      query += ` AND id != ?`;
+      params.push(excludeId);
+    }
+
+    const [rows] = await pool.query(query, params);
+    return rows.length > 0;
   }
 
   // Thêm nhà cung cấp mới
@@ -54,55 +85,92 @@ class SupplierModel {
        VALUES (?, ?, ?, ?)`,
       [name, address, code, contactInfo]
     );
+    const newSupplier = await this.getSupplierById(result.insertId);
 
-    return this.getSupplierById(result.insertId);
+    return newSupplier;
   }
 
   // Cập nhật thông tin nhà cung cấp
   static async updateSupplier(id, supplierData) {
-    const { name, address, code, contactInfo } = supplierData;
-
-    // Kiểm tra code đã tồn tại (trừ supplier hiện tại)
-    const codeExists = await this.checkCodeExists(code, id);
-    if (codeExists) {
-      throw new Error("Mã nhà cung cấp đã tồn tại");
-    }
-
-    const [result] = await pool.query(
-      `UPDATE suppliers 
-       SET name = ?, address = ?, code = ?, contactInfo = ?
-       WHERE id = ?`,
-      [name, address, code, contactInfo, id]
+    // Kiểm tra nhà cung cấp có tồn tại không
+    const [existing] = await pool.query(
+      `SELECT id FROM suppliers WHERE id = ?`,
+      [id]
     );
 
-    if (result.affectedRows === 0) {
+    if (existing.length === 0) {
       throw new Error("Không tìm thấy nhà cung cấp");
     }
 
-    return this.getSupplierById(id);
+    // Kiểm tra mã code trùng lặp (ngoại trừ chính nó)
+    if (supplierData.code) {
+      const codeExists = await this.checkCodeExists(supplierData.code, id);
+      if (codeExists) {
+        throw new Error("Mã nhà cung cấp đã tồn tại");
+      }
+    }
+
+    // Tạo câu query động
+    const updates = [];
+    const values = [];
+
+    if (supplierData.name !== undefined) {
+      updates.push("name = ?");
+      values.push(supplierData.name);
+    }
+    if (supplierData.address !== undefined) {
+      updates.push("address = ?");
+      values.push(supplierData.address);
+    }
+    if (supplierData.code !== undefined) {
+      updates.push("code = ?");
+      values.push(supplierData.code);
+    }
+    if (supplierData.contactInfo !== undefined) {
+      updates.push("contactInfo = ?");
+      values.push(supplierData.contactInfo);
+    }
+
+    if (updates.length === 0) {
+      return true; // Không có gì để cập nhật
+    }
+
+    values.push(id);
+
+    const [result] = await pool.query(
+      `UPDATE suppliers SET ${updates.join(", ")} WHERE id = ?`,
+      values
+    );
+
+    return result.affectedRows > 0;
   }
 
   // Xóa nhà cung cấp
   static async deleteSupplier(id) {
-    // Kiểm tra nhà cung cấp có sản phẩm không
-    const [products] = await pool.query(
-      "SELECT COUNT(*) as count FROM products WHERE supplierId = ?",
+    // Kiểm tra nhà cung cấp có tồn tại không
+    const [existing] = await pool.query(
+      `SELECT id FROM suppliers WHERE id = ?`,
       [id]
     );
 
-    if (products[0].count > 0) {
-      throw new Error("Không thể xóa nhà cung cấp đang có sản phẩm");
-    }
-
-    const [result] = await pool.query("DELETE FROM suppliers WHERE id = ?", [
-      id,
-    ]);
-
-    if (result.affectedRows === 0) {
+    if (existing.length === 0) {
       throw new Error("Không tìm thấy nhà cung cấp");
     }
 
-    return true;
+    // Kiểm tra có sản phẩm nào đang sử dụng nhà cung cấp này không
+    const [products] = await pool.query(
+      `SELECT id FROM products WHERE supplierId = ? LIMIT 1`,
+      [id]
+    );
+
+    if (products.length > 0) {
+      throw new Error("Không thể xóa nhà cung cấp đang có sản phẩm");
+    }
+
+    const [result] = await pool.query(`UPDATE suppliers SET isActive = 0 WHERE id = ?`, [id
+    ]);
+    const data = await this.getSupplierById(id);
+    return data;
   }
 }
 

@@ -25,19 +25,14 @@ class SupplierService {
 
   // Thêm nhà cung cấp mới
   static async createSupplier(supplierData) {
-    try {
-      return await SupplierModel.createSupplier(supplierData);
-    } catch (error) {
-      if (error.message === "Mã nhà cung cấp đã tồn tại") {
-        throw error;
-      }
-      throw new Error("Không thể tạo nhà cung cấp mới");
-    }
+    const result = await SupplierModel.createSupplier(supplierData);
+    return result;
   }
 
   // Cập nhật thông tin nhà cung cấp
   static async updateSupplier(id, supplierData) {
     try {
+      
       return await SupplierModel.updateSupplier(id, supplierData);
     } catch (error) {
       if (
@@ -53,8 +48,8 @@ class SupplierService {
   // Xóa nhà cung cấp
   static async deleteSupplier(id) {
     try {
-      await SupplierModel.deleteSupplier(id);
-      return true;
+     const result = await SupplierModel.deleteSupplier(id);
+      return result;
     } catch (error) {
       if (
         error.message === "Không thể xóa nhà cung cấp đang có sản phẩm" ||

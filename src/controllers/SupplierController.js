@@ -9,15 +9,8 @@ class SupplierController {
 
       const suppliers = await SupplierService.getAllSuppliers(page, limit);
       res.json({
-        success: true,
-        data: {
-          suppliers,
-          pagination: {
-            page,
-            limit,
-            total: suppliers[0]?.total_count || 0,
-          },
-        },
+        success: true,        
+        suppliers,        
       });
     } catch (error) {
       next(error);
@@ -60,7 +53,6 @@ class SupplierController {
       res.json({
         success: true,
         message: "Cập nhật thông tin nhà cung cấp thành công",
-        data: supplier,
       });
     } catch (error) {
       next(error);
