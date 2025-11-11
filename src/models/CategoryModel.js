@@ -14,32 +14,7 @@ export async function getCategories() {
      ORDER BY c.parentId ASC, c.name ASC`
   );
 
-  // Chuyển đổi danh sách phẳng thành cấu trúc cây
-  const categoryMap = new Map();
-  const rootCategories = [];
-
-  // Đầu tiên, tạo map với key là id của danh mục
-  rows.forEach((category) => {
-    categoryMap.set(category.id, {
-      ...category,
-      children: [],
-    });
-  });
-
-  // Sau đó, xây dựng cấu trúc cây
-  rows.forEach((category) => {
-    const categoryWithChildren = categoryMap.get(category.id);
-    if (category.parentId === null) {
-      rootCategories.push(categoryWithChildren);
-    } else {
-      const parent = categoryMap.get(category.parentId);
-      if (parent) {
-        parent.children.push(categoryWithChildren);
-      }
-    }
-  });
-
-  return rootCategories;
+  return rows;
 }
 
 /**
@@ -138,7 +113,7 @@ export async function deleteCategory(id) {
 
     // Thực hiện xóa danh mục
     const [result] = await connection.query(
-      "DELETE FROM categories WHERE id = ?",
+      "UPDATE categories SET isActive = 0 WHERE id = ?",
       [id]
     );
 

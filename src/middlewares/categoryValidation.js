@@ -15,9 +15,16 @@ export const createCategoryValidation = [
     .withMessage("Mô tả phải có ít nhất 10 ký tự"),
 
   body("parentId")
-    .optional()
-    .isInt()
-    .withMessage("ID danh mục cha không hợp lệ"),
+    .optional({ nullable: true })
+    .custom((value) => {
+      if (value === null || value === undefined || value === "") {
+        return true;
+      }
+      if (!Number.isInteger(Number(value)) || Number(value) <= 0) {
+        throw new Error("ID danh mục cha không hợp lệ");
+      }
+      return true;
+    }),
 ];
 
 export const updateCategoryValidation = [
