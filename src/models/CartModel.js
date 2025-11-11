@@ -141,3 +141,51 @@ export async function calculateCartTotal(cartId) {
   );
   return result[0].total || 0;
 }
+
+/**
+ * Lấy giỏ hàng của user 
+ */
+export async function getCart(userId) {
+  // Lấy hoặc tạo giỏ hàng
+  const cart = await getOrCreateCart(userId);
+
+  // Lấy danh sách items trong giỏ với thông tin đầy đủ
+  const [items] = await pool.query(
+    `SELECT 
+      ci.id,
+      ci.cartId,
+      ci.productId,
+      ci.variantId,
+      ci.quantity,
+      ci.unitPrice,
+      p.name as productName,
+      p.description as productDescription,
+      p.imageUrl as productImage,
+      v.name as variantName,
+      v.additionalPrice as variantPrice,
+      (ci.unitPrice + COALESCE(v.additionalPrice, 0)) as finalPrice,
+      (ci.quantity * (ci.unitPrice + COALESCE(v.additionalPrice, 0))) as totalPrice,
+      i.quantity as stockQuantity
+    FROM cart_items ci
+    LEFT JOIN products p ON ci.productId = p.id
+    LEFT JOIN variants v ON ci.variantId = v.id
+    LEFT JOIN inventories i ON p.id = i.productId
+    WHERE ci.cartId = ?
+    ORDER BY ci.id DESC`,
+    [cart.id]
+  );
+
+  // Tính tổng tiền giỏ hàng
+  let totalAmount = 0;
+  for (const item of items) {
+    totalAmount += item.totalPrice;
+  }
+
+  return {
+    id: cart.id,
+    userId: cart.userId,
+    items: items,
+    totalAmount: totalAmount,
+    itemCount: items.length
+  };
+}

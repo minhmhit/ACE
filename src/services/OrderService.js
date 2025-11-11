@@ -16,7 +16,7 @@ class OrderService {
 
       // Lấy thông tin giỏ hàng của user
       const cart = await CartModel.getCart(userId);
-      if (!cart || cart.items.length === 0) {
+      if (!cart) {
         throw new Error("Giỏ hàng trống");
       }
 
