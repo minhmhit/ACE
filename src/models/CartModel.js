@@ -50,14 +50,23 @@ export async function addToCart(
   { productId, variantId, quantity, unitPrice }
 ) {
   // Kiểm tra sản phẩm đã có trong giỏ chưa
-  const [existingItems] = await pool.query(
-    "SELECT * FROM cart_items WHERE cartId = ? AND productId = ? AND variantId IS NOT DISTINCT FROM ?",
-    [cartId, productId, variantId]
-  );
+  // Xử lý trường hợp variantId có thể null
+  let query, params;
+  
+  if (variantId) {
+    query = "SELECT * FROM cart_items WHERE cartId = ? AND productId = ? AND variantId = ?";
+    params = [cartId, productId, variantId];
+  } else {
+    query = "SELECT * FROM cart_items WHERE cartId = ? AND productId = ? AND variantId IS NULL";
+    params = [cartId, productId];
+  }
+
+  const [existingItems] = await pool.query(query, params);
 
   if (existingItems.length > 0) {
     // Nếu có rồi thì cập nhật số lượng
-    const newQuantity = existingItems[0].quantity + quantity;
+    const newQuantity = Number(existingItems[0].quantity) + Number(quantity);
+    console.log(newQuantity);
     await pool.query("UPDATE cart_items SET quantity = ? WHERE id = ?", [
       newQuantity,
       existingItems[0].id,
@@ -68,7 +77,7 @@ export async function addToCart(
   // Nếu chưa có thì thêm mới
   const [result] = await pool.query(
     "INSERT INTO cart_items (cartId, productId, variantId, quantity, unitPrice) VALUES (?, ?, ?, ?, ?)",
-    [cartId, productId, variantId, quantity, unitPrice]
+    [cartId, productId, variantId || null, quantity, unitPrice]
   );
 
   return result.insertId;

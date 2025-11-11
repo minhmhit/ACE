@@ -23,7 +23,7 @@ router.post(
 
 // Route cập nhật số lượng sản phẩm trong giỏ
 router.put(
-  "/update/:cartItemId",
+  "/update/:id",
   authenticate,
   updateCartItemValidation,
   validateResult,
@@ -32,7 +32,7 @@ router.put(
 
 // Route xóa sản phẩm khỏi giỏ
 router.delete(
-  "/remove/:cartItemId",
+  "/remove/:id",
   authenticate,
   CartController.removeFromCart
 );
