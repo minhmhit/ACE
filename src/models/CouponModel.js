@@ -65,24 +65,57 @@ class CouponModel {
 
   // Cập nhật mã giảm giá
   static async updateCoupon(id, couponData) {
-    const { code, discountPercent, validFrom, validUntil } = couponData;
-
-    // Kiểm tra code đã tồn tại (trừ coupon hiện tại)
-    const codeExists = await this.checkCodeExists(code, id);
-    if (codeExists) {
-      throw new Error("Mã giảm giá đã tồn tại");
-    }
-
-    const [result] = await pool.query(
-      `UPDATE coupons 
-       SET code = ?, discountPercent = ?, validFrom = ?, validUntil = ?
-       WHERE id = ?`,
-      [code, discountPercent, validFrom, validUntil, id]
-    );
-
-    if (result.affectedRows === 0) {
+    // Kiểm tra coupon có tồn tại không
+    const existingCoupon = await this.getCouponById(id);
+    if (!existingCoupon) {
       throw new Error("Không tìm thấy mã giảm giá");
     }
+
+    // Kiểm tra code đã tồn tại (nếu có truyền code mới)
+    if (couponData.code && couponData.code !== existingCoupon.code) {
+      const codeExists = await this.checkCodeExists(couponData.code, id);
+      if (codeExists) {
+        throw new Error("Mã giảm giá đã tồn tại");
+      }
+    }
+
+    // Tạo câu query động chỉ cập nhật các trường được truyền lên
+    const updates = [];
+    const values = [];
+
+    if (couponData.code !== undefined) {
+      updates.push("code = ?");
+      values.push(couponData.code);
+    }
+
+    if (couponData.discountPercent !== undefined) {
+      updates.push("discountPercent = ?");
+      values.push(couponData.discountPercent);
+    }
+
+    if (couponData.validFrom !== undefined) {
+      updates.push("validFrom = ?");
+      values.push(couponData.validFrom);
+    }
+
+    if (couponData.validUntil !== undefined) {
+      updates.push("validUntil = ?");
+      values.push(couponData.validUntil);
+    }
+
+    // Nếu không có trường nào để cập nhật
+    if (updates.length === 0) {
+      return existingCoupon;
+    }
+
+    // Thêm id vào cuối mảng values
+    values.push(id);
+
+    // Thực hiện update
+    const [result] = await pool.query(
+      `UPDATE coupons SET ${updates.join(", ")} WHERE id = ?`,
+      values
+    );
 
     return this.getCouponById(id);
   }

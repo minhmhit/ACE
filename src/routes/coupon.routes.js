@@ -3,6 +3,7 @@ import CouponController from "../controllers/CouponController.js";
 import {
   createCouponValidation,
   verifyCouponValidation,
+  updateCouponValidation
 } from "../middlewares/couponValidation.js";
 import { validateResult } from "../middlewares/validator.js";
 import { authenticate, authorize } from "../middlewares/auth.js";
@@ -23,7 +24,7 @@ const adminAuth = [authenticate, authorize(1)];
 router.get("/", adminAuth, CouponController.getAllCoupons);
 
 router.post(
-  "/",
+  "/add",
   adminAuth,
   createCouponValidation,
   validateResult,
@@ -31,13 +32,13 @@ router.post(
 );
 
 router.put(
-  "/:id",
+  "/update/:id",
   adminAuth,
-  createCouponValidation,
+  updateCouponValidation,
   validateResult,
   CouponController.updateCoupon
 );
 
-router.delete("/:id", adminAuth, CouponController.deleteCoupon);
+router.delete("/delete/:id", adminAuth, CouponController.deleteCoupon);
 
 export default router;

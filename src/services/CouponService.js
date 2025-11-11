@@ -54,11 +54,8 @@ class CouponService {
   // Cập nhật mã giảm giá
   static async updateCoupon(id, couponData) {
     try {
-      // Validate ngày bắt đầu và kết thúc
-      const validFrom = new Date(couponData.validFrom);
-      const validUntil = new Date(couponData.validUntil);
-
-      if (validFrom > validUntil) {
+    
+      if (couponData.validFrom && couponData.validUntil && validFrom > validUntil) {
         throw new Error("Ngày bắt đầu phải trước ngày kết thúc");
       }
 
@@ -67,9 +64,7 @@ class CouponService {
       }
 
       return await CouponModel.updateCoupon(id, {
-        ...couponData,
-        validFrom,
-        validUntil,
+        ...couponData
       });
     } catch (error) {
       if (
