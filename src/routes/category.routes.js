@@ -16,7 +16,7 @@ router.get("/:id", CategoryController.getCategoryById);
 router.post(
   "/add",
   authenticate,
-  authorize(1),
+  authorize(1,3),
   createCategoryValidation,
   CategoryController.createCategory
 );
@@ -24,7 +24,7 @@ router.post(
 router.put(
   "/update/:id",
   authenticate,
-  authorize(1),
+  authorize(1,3),
   updateCategoryValidation,
   CategoryController.updateCategory
 );
@@ -32,7 +32,7 @@ router.put(
 router.delete(
   "/delete/:id",
   authenticate,
-  authorize(1),
+  authorize(1,3),
   CategoryController.deleteCategory
 );
 

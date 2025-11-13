@@ -31,17 +31,17 @@ router.put(
 );
 
 // Admin only routes
-router.get("/users", authenticate, authorize(1), UserController.getUsers);
+router.get("/users", authenticate, authorize(1,5), UserController.getUsers);
 router.get(
   "/users/:id",
   authenticate,
-  authorize(1),
+  authorize(1,5),
   UserController.getUserDetail
 );
 router.put(
   "/users/:id/status",
   authenticate,
-  authorize(1),
+  authorize(1,5),
   updateUserStatusValidation,
   UserController.updateUserStatus
 );

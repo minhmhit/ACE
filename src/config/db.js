@@ -8,12 +8,14 @@ export const pool = mysql.createPool({
   password: process.env.DB_PASS || "",
   database: process.env.DB_NAME || "ecommerce_cofee",
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: 100,
+  connectTimeout: 10000000,
   queueLimit: 0,
 });
 
 //Thông báo kết nối mysql thành công
-pool.getConnection()
+pool
+  .getConnection()
   .then(() => {
     console.log("Kết nối MySQL thành công!");
   })

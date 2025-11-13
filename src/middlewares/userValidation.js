@@ -40,10 +40,14 @@ export const loginValidation = [
 export const updateProfileValidation = [
   body("name")
     .trim()
-    .notEmpty()
-    .withMessage("Tên không được để trống")
+    .optional()
     .isLength({ min: 2 })
     .withMessage("Tên phải có ít nhất 2 ký tự"),
+  body("phoneNumber")
+    .trim()
+    .optional()
+    .isMobilePhone()
+    .withMessage("Số điện thoại không được để trống"),
 ];
 
 export const changePasswordValidation = [

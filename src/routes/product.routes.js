@@ -19,7 +19,7 @@ router.get("/:id", ProductController.getProductById);
 router.post(
   "/add",
   authenticate,
-  authorize(1),
+  authorize(1,3),
   createProductValidation,
   ProductController.createProduct
 );
@@ -27,7 +27,7 @@ router.post(
 router.put(
   "/update/:id",
   authenticate,
-  authorize(1),
+  authorize(1,3),
   updateProductValidation,
   ProductController.updateProduct
 );
@@ -35,7 +35,7 @@ router.put(
 router.delete(
   "/delete/:id",
   authenticate,
-  authorize(1),
+  authorize(1,3),
   ProductController.deleteProduct
 );
 
@@ -43,7 +43,7 @@ router.delete(
 router.post(
   "/products/:id/variants",
   authenticate,
-  authorize(1),
+  authorize(1,3),
   createVariantValidation,
   ProductController.createVariant
 );
@@ -51,7 +51,7 @@ router.post(
 router.put(
   "/variants/:id",
   authenticate,
-  authorize([1]),
+  authorize(1,3),
   updateVariantValidation,
   ProductController.updateVariant
 );
@@ -59,7 +59,7 @@ router.put(
 router.delete(
   "/variants/:id",
   authenticate,
-  authorize([1]),
+  authorize(1,3),
   ProductController.deleteVariant
 );
 

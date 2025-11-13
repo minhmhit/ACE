@@ -5,7 +5,7 @@ import { pool } from "../config/db.js";
  */
 export async function getUserByEmail(email) {
   const [rows] = await pool.query(
-    "SELECT id, email, password, name, roleId, isActive FROM users WHERE email = ?",
+    "SELECT * FROM users WHERE email = ?",
     [email]
   );
   return rows[0];
@@ -27,7 +27,7 @@ export async function createUser({ name, email, password, roleId }) {
  */
 export async function getUserById(id) {
   const [rows] = await pool.query(
-    "SELECT id, email, name, roleId, isActive FROM users WHERE id = ?",
+    "SELECT id, email, name, phoneNumber, roleId, isActive FROM users WHERE id = ?",
     [id]
   );
   return rows[0];
