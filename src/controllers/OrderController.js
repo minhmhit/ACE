@@ -8,6 +8,8 @@ class OrderController {
       const orderData = {
         cartItems: req.body.cartItems, // Mảng các sản phẩm từ giỏ hàng
         couponId: req.body.couponId || null,
+        shipAddress: req.body.shipAddress || null,
+        
       };
 
       const order = await OrderService.createOrder(userId, orderData);
@@ -51,7 +53,7 @@ class OrderController {
   static async getOrderById(req, res, next) {
     try {
       const orderId = req.params.id;
-      const userId = req.user.roleId === 1 ? null : req.user.id;
+      const userId = req.user.roleId === 1 || req.user.roleId === 4 ? null : req.user.id;
 
       const order = await OrderService.getOrderById(orderId, userId);
       res.json({

@@ -26,12 +26,13 @@ class OrderModel {
           totalAmount -= discount;
         }
       }
-
       // Tạo đơn hàng
+      console.log(orderData);
+
       const [order] = await conn.query(
-        `INSERT INTO orders (userId, totalAmount, orderDate, shipaddress, status, couponId)
+        `INSERT INTO orders (userId, totalAmount, orderDate, shipAddress, status, couponId)
          VALUES (?, ?, NOW(), ?, 'PENDING', ?)`,
-        [userId, totalAmount, orderData.shipaddress||null, orderData.couponId || null]
+        [userId, totalAmount, orderData.shipAddress||null, orderData.couponId || null]
       );
 
       const orderId = order.insertId;
@@ -102,7 +103,7 @@ class OrderModel {
   static async getOrdersByUser(userId, page = 1, limit = 10) {
     const offset = (page - 1) * limit;
     const [orders] = await pool.query(
-      `SELECT o.id, o.totalAmount, o.orderDate, o.status, o.couponId, o.shipaddress,
+      `SELECT o.id, o.totalAmount, o.orderDate, o.status, o.couponId, o.shipAddress,
               (SELECT COUNT(*) FROM orders WHERE userId = ?) as total_count
        FROM orders o
        WHERE o.userId = ?
@@ -115,7 +116,7 @@ class OrderModel {
 
   // Lấy chi tiết đơn hàng
   static async getOrderById(orderId, userId = null) {
-    let query = `SELECT o.*, u.name as customerName, u.email
+    let query = `SELECT o.*, u.name as customerName, u.email, u.phoneNumber
                  FROM orders o
                  JOIN users u ON o.userId = u.id
                  WHERE o.id = ?`;
@@ -200,8 +201,8 @@ class OrderModel {
   // Admin: Lấy tất cả đơn hàng
   static async getAllOrders(page = 1, limit = 10, status = null) {
     const offset = (page - 1) * limit;
-    let query = `SELECT o.id, o.totalAmount, o.orderDate, o.status, o.couponId, o.shipaddress,
-                        u.name as customerName, u.email,
+    let query = `SELECT o.id, o.totalAmount, o.orderDate, o.status, o.couponId, o.shipAddress,
+                        u.name as customerName, u.email,u.phoneNumber,
                         (SELECT COUNT(*) FROM orders ${
                           status ? "WHERE status = ?" : ""
                         }) as total_count

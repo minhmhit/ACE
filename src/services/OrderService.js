@@ -66,6 +66,7 @@ class OrderService {
         userId,
         {
           couponId: orderData.couponId || null,
+          shipAddress: orderData.shipAddress || null,
         },
         validCartItems
       );
