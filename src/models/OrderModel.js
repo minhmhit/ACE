@@ -29,9 +29,9 @@ class OrderModel {
 
       // Tạo đơn hàng
       const [order] = await conn.query(
-        `INSERT INTO orders (userId, totalAmount, orderDate, status, couponId)
-         VALUES (?, ?, NOW(), 'PENDING', ?)`,
-        [userId, totalAmount, orderData.couponId || null]
+        `INSERT INTO orders (userId, totalAmount, orderDate, shipaddress, status, couponId)
+         VALUES (?, ?, NOW(), ?, 'PENDING', ?)`,
+        [userId, totalAmount, orderData.shipaddress||null, orderData.couponId || null]
       );
 
       const orderId = order.insertId;
@@ -102,7 +102,7 @@ class OrderModel {
   static async getOrdersByUser(userId, page = 1, limit = 10) {
     const offset = (page - 1) * limit;
     const [orders] = await pool.query(
-      `SELECT o.id, o.totalAmount, o.orderDate, o.status, o.couponId,
+      `SELECT o.id, o.totalAmount, o.orderDate, o.status, o.couponId, o.shipaddress,
               (SELECT COUNT(*) FROM orders WHERE userId = ?) as total_count
        FROM orders o
        WHERE o.userId = ?
@@ -200,7 +200,7 @@ class OrderModel {
   // Admin: Lấy tất cả đơn hàng
   static async getAllOrders(page = 1, limit = 10, status = null) {
     const offset = (page - 1) * limit;
-    let query = `SELECT o.id, o.totalAmount, o.orderDate, o.status, o.couponId,
+    let query = `SELECT o.id, o.totalAmount, o.orderDate, o.status, o.couponId, o.shipaddress,
                         u.name as customerName, u.email,
                         (SELECT COUNT(*) FROM orders ${
                           status ? "WHERE status = ?" : ""

@@ -22,6 +22,11 @@ export const createOrderValidation = [
     .isInt({ min: 1 })
     .withMessage("Số lượng phải là số nguyên dương"),
 
+  body("shipaddress")
+    .optional({ nullable: true })
+    .isString()
+    .withMessage("Địa chỉ giao hàng không hợp lệ"),
+
   body("couponId")
     .optional({ nullable: true })
     .isInt({ min: 1 })
