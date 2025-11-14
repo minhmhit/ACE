@@ -13,6 +13,7 @@ import couponRoutes from "./routes/coupon.routes.js";
 import importRoutes from "./routes/import.routes.js";
 import receiptRoutes from "./routes/receipt.routes.js";
 import variantRoutes from "./routes/variant.routes.js";
+import uploadRoutes from "./routes/upload.routes.js";
 
 // Load env vars
 dotenv.config();
@@ -35,6 +36,7 @@ app.use("/api/v1/coupons", couponRoutes);
 app.use("/api/v1/imports", importRoutes);
 app.use("/api/v1/receipts", receiptRoutes);
 app.use("/api/v1/variants", variantRoutes);
+app.use("/api/v1/uploads", uploadRoutes);
 // Routes
 app.get("/", (req, res) => {
   res.json({ message: "Coffee Shop API" });

@@ -32,7 +32,12 @@ class OrderModel {
       const [order] = await conn.query(
         `INSERT INTO orders (userId, totalAmount, orderDate, shipAddress, status, couponId)
          VALUES (?, ?, NOW(), ?, 'PENDING', ?)`,
-        [userId, totalAmount, orderData.shipAddress||null, orderData.couponId || null]
+        [
+          userId,
+          totalAmount,
+          orderData.shipAddress || null,
+          orderData.couponId || null,
+        ]
       );
 
       const orderId = order.insertId;
@@ -219,6 +224,23 @@ class OrderModel {
     params.push(limit, offset);
 
     const [orders] = await pool.query(query, params);
+
+    // Lấy chi tiết sản phẩm cho mỗi đơn hàng
+    for (const order of orders) {
+      const [items] = await pool.query(
+        `SELECT oi.*, 
+                p.name as productName, 
+                p.imageUrl,
+                v.name as variantName
+         FROM order_items oi
+         JOIN products p ON oi.productId = p.id
+         LEFT JOIN variants v ON oi.variantId = v.id
+         WHERE oi.orderId = ?`,
+        [order.id]
+      );
+      order.items = items;
+    }
+
     return orders;
   }
 

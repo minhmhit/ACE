@@ -1246,6 +1246,28 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "get all coupons",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/v1/coupons/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"coupons",
+								""
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -1260,7 +1282,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsInJvbGVJZCI6MiwiaWF0IjoxNzYyODU4ODczLCJleHAiOjE3NjI5NDUyNzN9.5glRoyyz342y-hUoczG5wJLf0-DdL6IvYZSBVpRdeTo",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEwLCJyb2xlSWQiOjIsImlhdCI6MTc2MzA4NDcwNCwiZXhwIjoxNzYzMTcxMTA0fQ.L3p_E8UZBS0JNGfMMwbADsZ40LZ60nWTgiFMd1162e8",
 									"type": "string"
 								}
 							]
@@ -1269,7 +1291,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"cartItems\": [\r\n    {\r\n      \"cartItemId\": 1,\r\n      \"productId\": 1,\r\n      \"quantity\": 1\r\n    },\r\n    {\r\n      \"cartItemId\": 3,\r\n      \"productId\": 4,\r\n      \"quantity\": 1\r\n    }\r\n  ],\r\n  \"couponId\": 1\r\n}",
+							"raw": "{\r\n  \"cartItems\": [\r\n    {\r\n      \"cartItemId\": 23,\r\n      \"productId\": 2,\r\n      \"quantity\": 1\r\n    }\r\n  ],\r\n  \"couponId\": 1,\r\n  \"shipAddress\":\"HCM\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1333,7 +1355,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsInJvbGVJZCI6MiwiaWF0IjoxNzYyODU4ODczLCJleHAiOjE3NjI5NDUyNzN9.5glRoyyz342y-hUoczG5wJLf0-DdL6IvYZSBVpRdeTo",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjUsInJvbGVJZCI6NCwiaWF0IjoxNzYzMDg2MTAyLCJleHAiOjE3NjMxNzI1MDJ9.3w5byYgKrzOwhdrLtQI5RUBAguQHNDrsfjrjq2GaA4w",
 									"type": "string"
 								}
 							]
@@ -1341,7 +1363,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/v1/orders/1",
+							"raw": "http://localhost:3000/api/v1/orders/21",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -1351,7 +1373,7 @@
 								"api",
 								"v1",
 								"orders",
-								"1"
+								"21"
 							]
 						}
 					},
@@ -1398,7 +1420,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsInJvbGVJZCI6MSwiaWF0IjoxNzYyODU5NzM2LCJleHAiOjE3NjI5NDYxMzZ9.yHAFn5YWLb_4i9GGkWRGKitTOQaxa6R0mLHmU3sKS9Y",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsInJvbGVJZCI6MSwiaWF0IjoxNzYzMTI5MjkyLCJleHAiOjE3NjMyMTU2OTJ9.Ewy2Ed8McOtiosWCbwJIhMxaABCmMfkqQqfWo-nBry0",
 									"type": "string"
 								}
 							]
@@ -1683,6 +1705,33 @@
 								"v1",
 								"inventory",
 								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "receipt",
+			"item": [
+				{
+					"name": "get all receipt",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/v1/receipts/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"receipts",
+								""
 							]
 						}
 					},

@@ -54,17 +54,25 @@ class CouponService {
   // Cập nhật mã giảm giá
   static async updateCoupon(id, couponData) {
     try {
-    
-      if (couponData.validFrom && couponData.validUntil && validFrom > validUntil) {
-        throw new Error("Ngày bắt đầu phải trước ngày kết thúc");
+
+      if (couponData.validFrom && couponData.validUntil) {
+        const validFrom = new Date(couponData.validFrom);
+        const validUntil = new Date(couponData.validUntil);
+
+        if (validFrom > validUntil) {
+          throw new Error("Ngày bắt đầu phải trước ngày kết thúc");
+        }
       }
 
-      if (couponData.discountPercent <= 0 || couponData.discountPercent > 100) {
+      if (
+        couponData.discountPercent &&
+        (couponData.discountPercent <= 0 || couponData.discountPercent > 100)
+      ) {
         throw new Error("Phần trăm giảm giá phải từ 1 đến 100");
       }
 
       return await CouponModel.updateCoupon(id, {
-        ...couponData
+        ...couponData,
       });
     } catch (error) {
       if (
