@@ -21,6 +21,12 @@ export const registerValidation = [
     .withMessage("Mật khẩu không được để trống")
     .isLength({ min: 6 })
     .withMessage("Mật khẩu phải có ít nhất 6 ký tự"),
+
+  body("phoneNumber")
+  .optional({ nullable: true })
+  .isMobilePhone(),
+
+  body("roleId").optional({ nullable: true }),
 ];
 
 export const loginValidation = [

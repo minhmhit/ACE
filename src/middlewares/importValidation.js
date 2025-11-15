@@ -41,6 +41,5 @@ export const updatePaymentStatusValidation = [
   body("status")
     .notEmpty()
     .withMessage("Trạng thái thanh toán không được để trống")
-    .isIn(["pending", "paid", "cancelled"])
-    .withMessage("Trạng thái thanh toán không hợp lệ"),
+    
 ];

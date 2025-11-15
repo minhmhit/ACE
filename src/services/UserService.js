@@ -16,10 +16,11 @@ export async function register(userData) {
   const hashedPassword = await bcrypt.hash(userData.password, 10);
 
   // Tạo user mới (mặc định roleId = 2 là regular user)
+
   const userId = await UserModel.createUser({
     ...userData,
     password: hashedPassword,
-    roleId: 2,
+    roleId: userData.roleId || 2,
   });
 
   // Lấy thông tin user mới tạo (không bao gồm password)
@@ -98,7 +99,11 @@ export async function updateProfile(userId, updateData) {
 /**
  * Service đổi mật khẩu
  */
-export async function changePassword(userId, userEmail, { currentPassword, newPassword }) {
+export async function changePassword(
+  userId,
+  userEmail,
+  { currentPassword, newPassword }
+) {
   // Kiểm tra user tồn tại
   const user = await UserModel.getUserByEmail(userEmail);
   if (!user) {

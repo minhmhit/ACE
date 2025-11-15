@@ -14,10 +14,10 @@ export async function getUserByEmail(email) {
 /**
  * Tạo user mới
  */
-export async function createUser({ name, email, password, roleId }) {
+export async function createUser({ name, email, password, roleId, phoneNumber }) {
   const [result] = await pool.query(
-    "INSERT INTO users (name, email, password, roleId) VALUES (?, ?, ?, ?)",
-    [name, email, password, roleId]
+    "INSERT INTO users (name, email, password, roleId, phoneNumber) VALUES (?, ?, ?, ?, ?)",
+    [name, email, password, roleId, phoneNumber]
   );
   return result.insertId;
 }
