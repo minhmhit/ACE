@@ -3,6 +3,9 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // __dirname cho ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -10,8 +13,7 @@ const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-// ĐƯỜNG DẪN TUYỆT ĐỐI
-const ABSOLUTE_UPLOAD_PATH = `D:/study/HK5/ooad_prj/frontend/asset/img/products`;
+const ABSOLUTE_UPLOAD_PATH = process.env.ABSOLUTE_UPLOAD_PATH || `D:/study/HK5/ooad_prj/frontend/asset/img/products`;
 
 
 // Tạo thư mục nếu chưa tồn tại
