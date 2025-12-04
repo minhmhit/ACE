@@ -65,6 +65,18 @@ class InventoryService {
       throw error;
     }
   }
+
+  // Lấy danh sách sản phẩm có tồn kho thấp
+  static async getLowStockInventory(threshold, page, limit) {
+    try {
+      if (threshold && threshold <= 0) {
+        throw new Error("Ngưỡng tồn kho phải lớn hơn 0");
+      }
+      return await InventoryModel.getLowStockInventory(threshold, page, limit);
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 export default InventoryService;

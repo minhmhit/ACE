@@ -1,4 +1,4 @@
-import {pool} from "../config/db.js";
+import { pool } from "../config/db.js";
 
 class InventoryModel {
   // Lấy danh sách tồn kho tất cả sản phẩm
@@ -114,6 +114,22 @@ class InventoryModel {
         availableQuantity: inventoryMap[item.productId] || 0,
       })),
     };
+  }
+
+  // Lấy danh sách sản phẩm có tồn kho thấp
+  static async getLowStockInventory(threshold = 20, page = 1, limit = 10) {
+    const offset = (page - 1) * limit;
+    const [inventory] = await pool.query(
+      `SELECT i.*, p.name as product_name, p.description, p.imageUrl,
+              COUNT(*) OVER() as total_count
+       FROM inventories i
+       JOIN products p ON i.productId = p.id
+       WHERE i.quantity < ?
+       ORDER BY i.quantity ASC
+       LIMIT ? OFFSET ?`,
+      [threshold, limit, offset]
+    );
+    return inventory;
   }
 }
 

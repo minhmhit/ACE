@@ -71,6 +71,35 @@ class InventoryController {
       next(error);
     }
   }
+
+  // Lấy danh sách sản phẩm có tồn kho thấp
+  static async getLowStockInventory(req, res, next) {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const threshold = parseInt(req.query.threshold) || 20;
+
+      const inventory = await InventoryService.getLowStockInventory(
+        threshold,
+        page,
+        limit
+      );
+      res.json({
+        success: true,
+        data: {
+          inventory,
+          pagination: {
+            page,
+            limit,
+            threshold,
+            total: inventory[0]?.total_count || 0,
+          },
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default InventoryController;
