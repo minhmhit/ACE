@@ -6,7 +6,7 @@ class SupplierModel {
     const offset = (page - 1) * limit;
 
     const [rows] = await pool.query(
-      `SELECT id, name, address, code, contactInfo 
+      `SELECT id, name, address, code, contactInfo, isActive 
        FROM suppliers 
        ORDER BY id DESC 
        LIMIT ? OFFSET ?`,
@@ -31,7 +31,7 @@ class SupplierModel {
   // Lấy chi tiết nhà cung cấp kèm sản phẩm
   static async getSupplierById(id) {
     const [rows] = await pool.query(
-      `SELECT id, name, address, code, contactInfo 
+      `SELECT id, name, address, code, contactInfo, isActive
        FROM suppliers 
        WHERE id = ?`,
       [id]
