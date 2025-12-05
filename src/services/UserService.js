@@ -121,7 +121,7 @@ export async function changePassword(
 
   // Cập nhật mật khẩu
   await UserModel.updatePassword(userId, hashedPassword);
-  return true;
+  return user;
 }
 
 /**

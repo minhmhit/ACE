@@ -27,7 +27,7 @@ class OrderModel {
         }
       }
       // Tạo đơn hàng
-      console.log(orderData);
+      // console.log(orderData);
 
       const [order] = await conn.query(
         `INSERT INTO orders (userId, totalAmount, orderDate, shipAddress, status, couponId)

@@ -93,9 +93,10 @@ export async function changePassword(req, res, next) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    await UserService.changePassword(req.user.id, req.user.email, req.body);
+   const user = await UserService.changePassword(req.user.id, req.user.email, req.body);
     res.json({
       message: "Đổi mật khẩu thành công",
+      data: user,
     });
   } catch (error) {
     next(error);
