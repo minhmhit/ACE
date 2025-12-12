@@ -61,7 +61,7 @@ export async function updatePassword(id, newPassword) {
 export async function getAllUsers(page, limit) {
     const offset = (page - 1) * limit;
     const [rows] = await pool.query(
-        `SELECT u.id, u.name, u.email, u.isActive, r.name as roleName
+        `SELECT u.id, u.name, u.email, u.isActive, u.roleId, r.name as roleName
          FROM users u JOIN roles r ON u.roleId = r.id 
          LIMIT ? OFFSET ?`,
         [limit, offset]
