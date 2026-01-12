@@ -4,16 +4,25 @@ class CouponModel {
   // Lấy danh sách mã giảm giá
   static async getAllCoupons(page = 1, limit = 10) {
     const offset = (page - 1) * limit;
+    const today = new Date();
+     
     const [coupons] = await pool.query(
       `SELECT *, 
               COUNT(*) OVER() as total_count
        FROM coupons
+       
        ORDER BY validUntil DESC
        LIMIT ? OFFSET ?`,
       [limit, offset]
     );
-    return coupons;
-  }
+    // Lọc các mã giảm giá còn hiệu lực
+    const couponsAvailable = coupons.filter(coupon => {
+      const validFrom = new Date(coupon.validFrom);
+      const validUntil = new Date(coupon.validUntil);
+      return validFrom <= today && validUntil >= today;
+    });
+    return couponsAvailable;
+  };
 
   // Lấy chi tiết mã giảm giá
   static async getCouponById(id) {
