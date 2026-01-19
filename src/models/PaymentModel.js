@@ -180,6 +180,22 @@ class PaymentModel {
       conn.release();
     }
   }
+
+  static async updateEwalletDetails(paymentId, transactionNo, responseCode) {
+    const conn = await pool.getConnection();
+    try {
+      const [result] = await conn.query(
+        `UPDATE payment_ewallet_details 
+       SET transaction_id = ?, response_code = ?, paid_at = NOW()
+       WHERE payment_id = ?`,
+        [transactionNo, responseCode, paymentId],
+      );
+      return result.insertId;
+    } finally {
+      conn.release();
+    }
+  }
+
 }
 
 export default PaymentModel;

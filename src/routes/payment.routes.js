@@ -19,11 +19,7 @@ router.post(
   PaymentController.createVnpayPayment
 );
 
-/**
- * @route   GET /api/v1/payment/vnpay/return
- * @desc    VNPay redirect về sau khi user thanh toán (return URL)
- * @access  Public
- */
+
 router.get("/vnpay/return", PaymentController.handleVnpayReturn);
 router.get("/vnpay/result/:orderId", PaymentController.getPaymentResult);
 
