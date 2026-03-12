@@ -23,6 +23,8 @@ import leaveTypeRoutes from "./routes/leaveType.routes.js";
 import leaveRequestRoutes from "./routes/leaveRequest.routes.js";
 import resignationRequestRoutes from "./routes/resignationRequest.routes.js";
 import attendanceRoutes from "./routes/attendance.routes.js";
+import payrollPeriodRoutes from "./routes/payrollPeriod.routes.js";
+import payrollRoutes from "./routes/payroll.routes.js";
 
 // Load env vars
 dotenv.config();
@@ -63,6 +65,8 @@ app.use("/api/v1/leave-types", leaveTypeRoutes);
 app.use("/api/v1/leave-requests", leaveRequestRoutes);
 app.use("/api/v1/resignation-requests", resignationRequestRoutes);
 app.use("/api/v1/attendance", attendanceRoutes);
+app.use("/api/v1/payroll-periods", payrollPeriodRoutes);
+app.use("/api/v1/payrolls", payrollRoutes);
 // Routes
 app.get("/", (req, res) => {
   res.json({ message: "Coffee Shop API" });
