@@ -6,7 +6,7 @@ import {
   createEmployeeValidation,
   updateEmployeeValidation,
   changeStatusValidation,
-  changePositionValidation,
+  addPositionHistoryValidation,
 } from "../middlewares/employeeValidation.js";
 
 const router = express.Router();
@@ -96,15 +96,15 @@ router.patch(
 );
 
 /**
- * POST /employees/:id/position — Đổi chức vụ / lương
+ * POST /employees/:id/position-history — Thêm lịch sử chức vụ / lương (append-only)
  * Quyền: ADMIN, HRM
  */
 router.post(
-  "/:id/position",
+  "/:id/position-history",
   authenticate,
   authorize("ADMIN", "HRM"),
-  changePositionValidation,
-  EmployeeController.changePosition,
+  addPositionHistoryValidation,
+  EmployeeController.addPositionHistory,
 );
 
 /**
@@ -116,6 +116,17 @@ router.get(
   authenticate,
   authorize("ADMIN", "HRM"),
   EmployeeController.getPositionHistory,
+);
+
+/**
+ * GET /employees/:id/current-position — Chức vụ hiện tại
+ * Quyền: ADMIN, HRM
+ */
+router.get(
+  "/:id/current-position",
+  authenticate,
+  authorize("ADMIN", "HRM"),
+  EmployeeController.getCurrentPosition,
 );
 
 export default router;

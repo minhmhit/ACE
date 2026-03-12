@@ -1,5 +1,6 @@
 import { validationResult } from "express-validator";
 import * as EmployeeService from "../services/EmployeeService.js";
+import * as PositionHistoryService from "../services/PositionHistoryService.js";
 
 // ============================================
 // SELF-SERVICE
@@ -139,24 +140,36 @@ export async function changeStatus(req, res, next) {
 }
 
 /**
- * POST /employees/:id/position — Đổi chức vụ / lương
+ * GET /employees/:id/position-history — Lịch sử chức vụ
  */
-export async function changePosition(req, res, next) {
+export async function getPositionHistory(req, res, next) {
+  try {
+    const history = await PositionHistoryService.getHistory(req.params.id);
+    res.json({ success: true, data: history });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * POST /employees/:id/position-history — Thêm bản ghi chức vụ/lương mới
+ */
+export async function addPositionHistory(req, res, next) {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ success: false, errors: errors.array() });
     }
 
-    const employee = await EmployeeService.changePosition(
+    const record = await PositionHistoryService.addPositionHistory(
       req.params.id,
       req.body,
       req.user.id,
     );
-    res.json({
+    res.status(201).json({
       success: true,
-      message: "Đổi chức vụ thành công",
-      data: employee,
+      message: "Thêm lịch sử chức vụ thành công",
+      data: record,
     });
   } catch (error) {
     next(error);
@@ -164,12 +177,14 @@ export async function changePosition(req, res, next) {
 }
 
 /**
- * GET /employees/:id/position-history — Lịch sử chức vụ
+ * GET /employees/:id/current-position — Chức vụ hiện tại
  */
-export async function getPositionHistory(req, res, next) {
+export async function getCurrentPosition(req, res, next) {
   try {
-    const history = await EmployeeService.getPositionHistory(req.params.id);
-    res.json({ success: true, data: history });
+    const position = await PositionHistoryService.getCurrentPosition(
+      req.params.id,
+    );
+    res.json({ success: true, data: position });
   } catch (error) {
     next(error);
   }

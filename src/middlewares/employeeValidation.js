@@ -305,9 +305,9 @@ export const changeStatusValidation = [
 ];
 
 /**
- * Validation đổi chức vụ / lương
+ * Validation thêm lịch sử chức vụ / lương (POST /employees/:id/position-history)
  */
-export const changePositionValidation = [
+export const addPositionHistoryValidation = [
   body("positionId")
     .notEmpty()
     .withMessage("positionId không được để trống")

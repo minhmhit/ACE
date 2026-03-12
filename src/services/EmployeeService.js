@@ -78,30 +78,6 @@ function formatEmployee(row) {
   };
 }
 
-function formatPositionHistory(row) {
-  if (!row) return null;
-  return {
-    id: row.id,
-    employeeId: row.employee_id,
-    positionId: row.position_id,
-    positionCode: row.position_code || null,
-    positionName: row.position_name || null,
-    departmentId: row.department_id,
-    departmentCode: row.department_code || null,
-    departmentName: row.department_name || null,
-    effectiveFrom: row.effective_from,
-    effectiveTo: row.effective_to,
-    baseSalary: row.base_salary,
-    allowanceAmount: row.allowance_amount,
-    salaryType: row.salary_type,
-    note: row.note,
-    changedReason: row.changed_reason,
-    changedByUserId: row.changed_by_user_id,
-    changedByName: row.changed_by_name || null,
-    createdAt: row.created_at,
-  };
-}
-
 // ============================================
 // SELF-SERVICE (nhân viên tự xem/sửa thông tin cá nhân)
 // ============================================
@@ -380,74 +356,4 @@ export async function changeStatus(id, newStatus, currentUserId) {
 
   await EmployeeModel.update(id, updateData);
   return getById(id);
-}
-
-/**
- * Đổi chức vụ / lương (transaction: đóng bản ghi cũ → tạo bản ghi mới)
- */
-export async function changePosition(employeeId, data, currentUserId) {
-  const employee = await EmployeeModel.getById(employeeId);
-  if (!employee) {
-    const error = new Error("Không tìm thấy nhân viên");
-    error.statusCode = 404;
-    throw error;
-  }
-
-  const conn = await pool.getConnection();
-  try {
-    await conn.beginTransaction();
-
-    // 1. Đóng bản ghi position hiện tại
-    await EmployeePositionHistoryModel.closeCurrent(
-      conn,
-      employeeId,
-      data.effectiveFrom,
-    );
-
-    // 2. Tạo bản ghi position mới
-    await EmployeePositionHistoryModel.create(conn, {
-      employeeId,
-      positionId: data.positionId,
-      departmentId: data.departmentId || employee.department_id,
-      effectiveFrom: data.effectiveFrom,
-      baseSalary: data.baseSalary,
-      allowanceAmount: data.allowanceAmount || 0,
-      salaryType: data.salaryType || "MONTHLY",
-      note: data.note,
-      changedReason: data.changedReason,
-      changedByUserId: currentUserId,
-    });
-
-    // 3. Nếu đổi department thì cập nhật employees.department_id
-    if (data.departmentId && data.departmentId !== employee.department_id) {
-      await conn.query("UPDATE employees SET department_id = ? WHERE id = ?", [
-        data.departmentId,
-        employeeId,
-      ]);
-    }
-
-    await conn.commit();
-    return getById(employeeId);
-  } catch (err) {
-    await conn.rollback();
-    throw err;
-  } finally {
-    conn.release();
-  }
-}
-
-/**
- * Lấy lịch sử chức vụ của nhân viên
- */
-export async function getPositionHistory(employeeId) {
-  const employee = await EmployeeModel.getById(employeeId);
-  if (!employee) {
-    const error = new Error("Không tìm thấy nhân viên");
-    error.statusCode = 404;
-    throw error;
-  }
-
-  const history =
-    await EmployeePositionHistoryModel.getByEmployeeId(employeeId);
-  return history.map(formatPositionHistory);
 }
