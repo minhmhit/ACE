@@ -1,96 +1,61 @@
-import ReceiptService from "../services/ReceiptService.js";
+import * as ReceiptService from "../services/ReceiptService.js";
 
-class ReceiptController {
-  // Tạo phiếu thu mới
-  static async createReceipt(req, res) {
-    try {
-      const receiptData = {
-        amount: req.body.amount,
-        order_id: req.body.order_id,
-        payment_method: req.body.payment_method,
-        description: req.body.description,
-      };
+// ============================================
+// Controller xử lý request/response biên nhận
+// (Receipts được tự tạo khi confirm payment)
+// ============================================
 
-      const receipt = await ReceiptService.createReceipt(receiptData);
-      res.status(201).json({
-        message: "Tạo phiếu thu thành công",
-        data: receipt,
-      });
-    } catch (error) {
-      res.status(400).json({
-        error: "Tạo phiếu thu thất bại",
-        message: error.message,
-      });
-    }
-  }
-
-  // Lấy danh sách phiếu thu
-  static async getReceipts(req, res) {
-    try {
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 10;
-      const filters = {
-        payment_method: req.query.payment_method,
-      };
-
-      const result = await ReceiptService.getReceipts(page, limit, filters);
-      res.json(result);
-    } catch (error) {
-      res.status(500).json({
-        error: "Lấy danh sách phiếu thu thất bại",
-        message: error.message,
-      });
-    }
-  }
-
-  // Lấy chi tiết phiếu thu
-  static async getReceiptById(req, res) {
-    try {
-      const receipt = await ReceiptService.getReceiptById(req.params.id);
-      res.json(receipt);
-    } catch (error) {
-      res.status(404).json({
-        error: "Không tìm thấy phiếu thu",
-        message: error.message,
-      });
-    }
-  }
-
-  // Cập nhật ghi chú phiếu thu
-  static async updateReceipt(req, res) {
-    try {
-      const updates = {
-        description: req.body.description,
-      };
-
-      const receipt = await ReceiptService.updateReceipt(
-        req.params.id,
-        updates
-      );
-      res.json({
-        message: "Cập nhật phiếu thu thành công",
-        data: receipt,
-      });
-    } catch (error) {
-      res.status(400).json({
-        error: "Cập nhật phiếu thu thất bại",
-        message: error.message,
-      });
-    }
-  }
-
-  // Xóa phiếu thu
-  static async deleteReceipt(req, res) {
-    try {
-      const result = await ReceiptService.deleteReceipt(req.params.id);
-      res.json(result);
-    } catch (error) {
-      res.status(400).json({
-        error: "Xóa phiếu thu thất bại",
-        message: error.message,
-      });
-    }
+/**
+ * GET /api/v1/receipts/:id
+ * Lấy receipt theo id
+ */
+export async function getReceiptById(req, res, next) {
+  try {
+    const receipt = await ReceiptService.getReceiptById(
+      parseInt(req.params.id),
+    );
+    res.json({ data: receipt });
+  } catch (error) {
+    next(error);
   }
 }
 
-export default ReceiptController;
+/**
+ * GET /api/v1/receipts/order/:orderId
+ * Lấy receipts của đơn hàng
+ */
+export async function getReceiptsByOrderId(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const roleCode = req.user.role.code;
+    const orderId = parseInt(req.params.orderId);
+
+    const receipts = await ReceiptService.getReceiptsByOrderId(
+      orderId,
+      userId,
+      roleCode,
+    );
+    res.json({ data: receipts });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/v1/receipts
+ * Admin lấy danh sách receipts (phân trang + filter)
+ */
+export async function getAllReceipts(req, res, next) {
+  try {
+    const { orderId, paymentMethod, page, limit } = req.query;
+    const result = await ReceiptService.getAllReceipts({
+      orderId: orderId ? parseInt(orderId) : undefined,
+      paymentMethod,
+      page: parseInt(page) || 1,
+      limit: parseInt(limit) || 10,
+    });
+    res.json({ data: result });
+  } catch (error) {
+    next(error);
+  }
+}

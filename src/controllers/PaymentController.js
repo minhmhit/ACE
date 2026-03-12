@@ -1,165 +1,201 @@
-import PaymentService from "../services/PaymentService.js";
+import * as PaymentService from "../services/PaymentService.js";
+
+// ============================================
+// Controller xử lý request/response thanh toán
+// ============================================
 
 /**
- * Controller xử lý request/response cho các API thanh toán VNPay
+ * POST /api/v1/payments
+ * Tạo payment cho đơn hàng
  */
-class PaymentController {
-  /**
-   * Tạo URL thanh toán VNPay
-   * POST /api/v1/payment/vnpay/create
-   */
-  static async createVnpayPayment(req, res, next) {
-    try {
-      const userId = req.user.id;
-      const { orderId, orderInfo, locale } = req.body;
+export async function createPayment(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const result = await PaymentService.createPayment(userId, {
+      orderId: req.body.orderId,
+      paymentMethodCode: req.body.paymentMethodCode,
+      // VNPay fields
+      orderInfo: req.body.orderInfo,
+      ipAddr: req.ip,
+      locale: req.body.locale,
+      // Card fields
+      cardType: req.body.cardType,
+      last4Digits: req.body.last4Digits,
+      cardHolderName: req.body.cardHolderName,
+      bankName: req.body.bankName,
+      // Ewallet fields
+      transactionId: req.body.transactionId,
+    });
 
-      // Lấy IP address của client
-      const ipAddr =
-        req.headers["x-forwarded-for"] ||
-        req.connection.remoteAddress ||
-        req.socket.remoteAddress ||
-        "127.0.0.1";
-
-      const paymentData = {
-        orderId,
-        orderInfo,
-        ipAddr: ipAddr.replace("::ffff:", ""), // Remove IPv6 prefix
-        locale: locale || "vn",
-      };
-
-      const result = await PaymentService.createVnpayPaymentUrl(
-        userId,
-        paymentData,
-      );
-
-      res.status(201).json({
-        success: true,
-        message: "Tạo URL thanh toán thành công",
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * Xử lý VNPay return (callback sau khi thanh toán)
-   * GET /api/v1/payment/vnpay/return
-   */
-  static async handleVnpayReturn(req, res, next) {
-    try {
-      const vnpayData = req.query;
-      const result = await PaymentService.verifyVnpayReturn(vnpayData);
-      // Redirect user về trang kết quả thanh toán trên frontend
-      return res.redirect(
-        `${process.env.FRONTEND_URL}/payment-result?orderId=${result.orderId}`,
-      );
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * lấy thông tin payment result trả về cho frontend
-   * GET /api/v1/payments/result/:orderId
-   */
-  static async getPaymentResult(req, res, next) {
-    try {
-      const { orderId } = req.query;
-
-      const payment = await PaymentService.getPaymentByOrderId(orderId);
-      if (!payment) {
-        return res.status(404).json({ message: "Không tìm thấy payment" });
-      }
-
-      res.json({
-        success: payment.status === "SUCCESS",
-        data: payment,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * Xử lý VNPay IPN (Instant Payment Notification)
-   * GET /api/v1/payment/vnpay/ipn
-   */
-  static async handleVnpayIPN(req, res, next) {
-    try {
-      const vnpayData = req.query;
-
-      const result = await PaymentService.handleVnpayIPN(vnpayData);
-
-      // Trả về response theo format VNPay yêu cầu
-      res.json(result);
-    } catch (error) {
-      // IPN phải luôn trả về response, không throw error
-      res.json({
-        RspCode: "99",
-        Message: "Unknown error",
-      });
-    }
-  }
-
-  /**
-   * Query thông tin giao dịch từ VNPay
-   * GET /api/v1/payment/vnpay/query/:orderId
-   */
-  static async queryTransaction(req, res, next) {
-    try {
-      const userId = req.user.id;
-      const orderId = parseInt(req.params.orderId);
-      const transactionDate = req.query.transactionDate;
-
-      // Kiểm tra user có quyền xem order này không
-      // (Có thể thêm logic check ownership)
-
-      const result = await PaymentService.queryVnpayTransaction(
-        orderId,
-        transactionDate,
-      );
-
-      res.json({
-        success: true,
-        message: "Truy vấn thông tin giao dịch thành công",
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * Lấy lịch sử thanh toán của user
-   * GET /api/v1/payment/history
-   */
-  static async getPaymentHistory(req, res, next) {
-    try {
-      const userId = req.user.id;
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 10;
-
-      const payments = await PaymentService.getPaymentHistory(
-        userId,
-        page,
-        limit,
-      );
-
-      res.json({
-        success: true,
-        message: "Lấy lịch sử thanh toán thành công",
-        data: payments,
-        pagination: {
-          page,
-          limit,
-          total: payments.length,
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
+    res.status(201).json({
+      message: "Tạo thanh toán thành công",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
   }
 }
 
-export default PaymentController;
+/**
+ * GET /api/v1/payments/:id
+ * Lấy thông tin payment theo id
+ */
+export async function getPaymentById(req, res, next) {
+  try {
+    const payment = await PaymentService.getPaymentById(
+      parseInt(req.params.id),
+    );
+    res.json({ data: payment });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/v1/orders/:orderId/payment
+ * Lấy payment của đơn hàng (user xem đơn mình, admin/sale xem tất cả)
+ */
+export async function getOrderPayment(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const roleCode = req.user.role.code;
+    const orderId = parseInt(req.params.orderId);
+
+    const payment = await PaymentService.getOrderPayment(
+      orderId,
+      userId,
+      roleCode,
+    );
+    res.json({ data: payment });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * POST /api/v1/payments/:id/confirm
+ * Admin/Sale xác nhận thanh toán thành công
+ */
+export async function confirmPayment(req, res, next) {
+  try {
+    const result = await PaymentService.confirmPayment(parseInt(req.params.id));
+    res.json({
+      message: "Xác nhận thanh toán thành công",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * POST /api/v1/payments/:id/fail
+ * Admin đánh dấu thanh toán thất bại
+ */
+export async function failPayment(req, res, next) {
+  try {
+    const result = await PaymentService.failPayment(parseInt(req.params.id));
+    res.json({
+      message: "Đã đánh dấu thanh toán thất bại",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/v1/payments/history
+ * Lấy lịch sử thanh toán của user đang đăng nhập
+ */
+export async function getPaymentHistory(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const result = await PaymentService.getPaymentHistory(userId, page, limit);
+    res.json({ data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/v1/payments
+ * Admin lấy danh sách payments (phân trang + filter)
+ */
+export async function getAllPayments(req, res, next) {
+  try {
+    const { status, paymentMethodCode, page, limit } = req.query;
+    const result = await PaymentService.getAllPayments({
+      status,
+      paymentMethodCode,
+      page: parseInt(page) || 1,
+      limit: parseInt(limit) || 10,
+    });
+    res.json({ data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/v1/payments/methods
+ * Lấy danh sách payment methods
+ */
+export async function getPaymentMethods(req, res, next) {
+  try {
+    const methods = await PaymentService.getPaymentMethods();
+    res.json({ data: methods });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// === VNPay callback endpoints ===
+
+/**
+ * GET /api/v1/payments/vnpay/return
+ * VNPay redirect sau thanh toán
+ */
+export async function handleVnpayReturn(req, res, next) {
+  try {
+    const result = await PaymentService.verifyVnpayReturn(req.query);
+    res.json({
+      message: result.message,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/v1/payments/vnpay/ipn
+ * VNPay IPN callback
+ */
+export async function handleVnpayIPN(req, res, next) {
+  try {
+    const result = await PaymentService.handleVnpayIPN(req.query);
+    res.json(result);
+  } catch (error) {
+    res.json({ RspCode: "99", Message: "Unknown error" });
+  }
+}
+
+/**
+ * GET /api/v1/payments/vnpay/query/:orderId
+ * Query giao dịch VNPay
+ */
+export async function queryVnpayTransaction(req, res, next) {
+  try {
+    const result = await PaymentService.queryVnpayTransaction(
+      parseInt(req.params.orderId),
+      req.query.transactionDate,
+    );
+    res.json({ data: result });
+  } catch (error) {
+    next(error);
+  }
+}

@@ -1,36 +1,41 @@
 import express from "express";
-import ReceiptController from "../controllers/ReceiptController.js";
+import * as ReceiptController from "../controllers/ReceiptController.js";
 import {
-  createReceiptValidation,
-  updateReceiptValidation,
+  receiptIdValidation,
+  receiptOrderIdValidation,
+  getReceiptsValidation,
 } from "../middlewares/receiptValidation.js";
-import { validateRequest } from "../middlewares/validateRequest.js";
+import { validateResult } from "../middlewares/validator.js";
+import { authenticate, authorize } from "../middlewares/auth.js";
 
 const router = express.Router();
 
-// Lấy danh sách phiếu thu (có phân trang và filter)
-router.get("/", ReceiptController.getReceipts);
+// Lấy receipts theo order
+router.get(
+  "/order/:orderId",
+  authenticate,
+  receiptOrderIdValidation,
+  validateResult,
+  ReceiptController.getReceiptsByOrderId,
+);
 
-// Lấy chi tiết phiếu thu
-router.get("/:id", ReceiptController.getReceiptById);
-
-// Tạo phiếu thu mới
-router.post(
+// Admin lấy danh sách receipts
+router.get(
   "/",
-  createReceiptValidation,
-  validateRequest,
-  ReceiptController.createReceipt
+  authenticate,
+  authorize("ADMIN", "SALE"),
+  getReceiptsValidation,
+  validateResult,
+  ReceiptController.getAllReceipts,
 );
 
-// Cập nhật ghi chú phiếu thu
-router.patch(
+// Lấy receipt theo id
+router.get(
   "/:id",
-  updateReceiptValidation,
-  validateRequest,
-  ReceiptController.updateReceipt
+  authenticate,
+  receiptIdValidation,
+  validateResult,
+  ReceiptController.getReceiptById,
 );
-
-// Xóa phiếu thu
-router.delete("/:id", ReceiptController.deleteReceipt);
 
 export default router;

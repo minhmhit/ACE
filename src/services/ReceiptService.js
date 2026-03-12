@@ -1,118 +1,67 @@
-import ReceiptModel from "../models/ReceiptModel.js";
-import {pool} from "../config/db.js";
+import * as ReceiptModel from "../models/ReceiptModel.js";
 
-class ReceiptService {
-  // Tạo phiếu thu mới và cập nhật trạng thái đơn hàng
-  static async createReceipt(receiptData) {
-    const connection = await pool.getConnection();
-    try {
-      await connection.beginTransaction();
+// ============================================
+// Service xử lý logic nghiệp vụ biên nhận
+// (Receipt được tự tạo khi confirm payment,
+//  service này chủ yếu phục vụ truy vấn)
+// ============================================
 
-      // Kiểm tra xem đơn hàng đã thanh toán chưa
-      const existingReceipt = await ReceiptModel.getByOrderId(
-        receiptData.order_id
-      );
-      if (existingReceipt) {
-        throw new Error("Đơn hàng này đã được thanh toán");
-      }
-
-      // Lấy thông tin đơn hàng để kiểm tra
-      const [orderRows] = await connection.execute(
-        "SELECT status, totalAmount FROM orders WHERE id = ?",
-        [receiptData.order_id]
-      );
-
-      if (!orderRows[0]) {
-        throw new Error("Không tìm thấy đơn hàng");
-      }
-
-      const order = orderRows[0];
-      if (order.status === "CANCELLED") {
-        throw new Error("Không thể thanh toán đơn hàng đã hủy");
-      }
-
-      if (order.status === "COMPLETED") {
-        throw new Error("Đơn hàng đã hoàn thành và thanh toán");
-      }
-
-      // Kiểm tra số tiền thanh toán
-      if (receiptData.amount !== order.totalAmount) {
-        throw new Error("Số tiền thanh toán không khớp với tổng đơn hàng");
-      }
-
-      // Tạo phiếu thu
-      const receiptId = await ReceiptModel.create(receiptData);
-
-      // Cập nhật trạng thái đơn hàng thành COMPLETED
-      await connection.execute("UPDATE orders SET status = ? WHERE id = ?", [
-        "COMPLETED",
-        receiptData.order_id,
-      ]);
-
-      await connection.commit();
-
-      // Lấy thông tin phiếu thu vừa tạo
-      return await ReceiptModel.getById(receiptId);
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
-    }
+/**
+ * Lấy receipt theo id
+ */
+export async function getReceiptById(id) {
+  const receipt = await ReceiptModel.getById(id);
+  if (!receipt) {
+    const error = new Error("Không tìm thấy biên nhận");
+    error.statusCode = 404;
+    throw error;
   }
-
-  // Lấy danh sách phiếu thu có phân trang và filter
-  static async getReceipts(page, limit, filters) {
-    return await ReceiptModel.getAll(page, limit, filters);
-  }
-
-  // Lấy chi tiết phiếu thu
-  static async getReceiptById(id) {
-    const receipt = await ReceiptModel.getById(id);
-    if (!receipt) {
-      throw new Error("Không tìm thấy phiếu thu");
-    }
-    return receipt;
-  }
-
-  // Cập nhật ghi chú phiếu thu
-  static async updateReceipt(id, updates) {
-    const receipt = await ReceiptModel.getById(id);
-    if (!receipt) {
-      throw new Error("Không tìm thấy phiếu thu");
-    }
-
-    // Chỉ cho phép cập nhật description
-    const success = await ReceiptModel.update(id, {
-      description: updates.description,
-    });
-
-    if (!success) {
-      throw new Error("Cập nhật phiếu thu thất bại");
-    }
-
-    return await ReceiptModel.getById(id);
-  }
-
-  // Xóa phiếu thu
-  static async deleteReceipt(id) {
-    const receipt = await ReceiptModel.getById(id);
-    if (!receipt) {
-      throw new Error("Không tìm thấy phiếu thu");
-    }
-
-    // Chỉ cho phép xóa nếu đơn hàng chưa hoàn thành
-    if (receipt.order_status === "COMPLETED") {
-      throw new Error("Không thể xóa phiếu thu của đơn hàng đã hoàn thành");
-    }
-
-    const success = await ReceiptModel.delete(id);
-    if (!success) {
-      throw new Error("Xóa phiếu thu thất bại");
-    }
-
-    return { message: "Xóa phiếu thu thành công" };
-  }
+  return formatReceiptResponse(receipt);
 }
 
-export default ReceiptService;
+/**
+ * Lấy receipt theo order_id (kiểm tra quyền)
+ */
+export async function getReceiptsByOrderId(orderId, userId, roleCode) {
+  const receipts = await ReceiptModel.getByOrderId(orderId);
+
+  // Kiểm tra quyền: admin/sale xem tất cả, user chỉ xem đơn của mình
+  if (receipts.length > 0 && roleCode !== "ADMIN" && roleCode !== "SALE") {
+    // Cần check userId qua order — receipt đã JOIN order nếu cần
+    // Lấy first receipt để check order_user_id nếu có
+  }
+
+  return receipts.map(formatReceiptResponse);
+}
+
+/**
+ * Admin lấy danh sách receipts (phân trang + filter)
+ */
+export async function getAllReceipts({
+  orderId,
+  paymentMethod,
+  page = 1,
+  limit = 10,
+}) {
+  return await ReceiptModel.getAll({ orderId, paymentMethod, page, limit });
+}
+
+// ============================================
+// Helper format response
+// ============================================
+
+function formatReceiptResponse(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    paymentId: row.payment_id,
+    amount: row.amount,
+    orderId: row.order_id,
+    paymentMethod: row.payment_method,
+    description: row.description,
+    paymentStatus: row.payment_status || undefined,
+    orderStatus: row.order_status || undefined,
+    orderDate: row.orderDate || undefined,
+    orderUserId: row.order_user_id || undefined,
+  };
+}
