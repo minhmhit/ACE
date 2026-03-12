@@ -5,6 +5,7 @@ import {
   generatePayrollValidation,
   finalizePeriodValidation,
   idParamValidation,
+  employeeIdParamValidation,
 } from "../middlewares/payrollValidation.js";
 
 const router = express.Router();
@@ -27,8 +28,60 @@ router.get("/me", authenticate, PayrollController.getMyPayroll);
  */
 router.get("/me/yearly", authenticate, PayrollController.getMyYearlyPayroll);
 
+/**
+ * GET /payrolls/me/monthly-slip — Phiếu lương tháng chi tiết (in/xem)
+ * Query: ?month=3&year=2026
+ * Quyền: tất cả user đã đăng nhập
+ */
+router.get(
+  "/me/monthly-slip",
+  authenticate,
+  PayrollController.getMyMonthlySlip,
+);
+
+/**
+ * GET /payrolls/me/yearly-summary — Tổng hợp lương năm chi tiết
+ * Query: ?year=2026
+ * Quyền: tất cả user đã đăng nhập
+ */
+router.get(
+  "/me/yearly-summary",
+  authenticate,
+  PayrollController.getMyYearlySummary,
+);
+
 // ============================================
-// ADMIN / HRM
+// ADMIN / HRM — Xem phiếu lương nhân viên
+// ============================================
+
+/**
+ * GET /payrolls/admin/:employeeId/monthly-slip — Phiếu lương tháng (admin)
+ * Query: ?month=3&year=2026
+ * Quyền: ADMIN, HRM
+ */
+router.get(
+  "/admin/:employeeId/monthly-slip",
+  authenticate,
+  authorize("ADMIN", "HRM"),
+  employeeIdParamValidation,
+  PayrollController.getAdminMonthlySlip,
+);
+
+/**
+ * GET /payrolls/admin/:employeeId/yearly-summary — Tổng hợp năm (admin)
+ * Query: ?year=2026
+ * Quyền: ADMIN, HRM
+ */
+router.get(
+  "/admin/:employeeId/yearly-summary",
+  authenticate,
+  authorize("ADMIN", "HRM"),
+  employeeIdParamValidation,
+  PayrollController.getAdminYearlySummary,
+);
+
+// ============================================
+// ADMIN / HRM — Quản lý payroll
 // ============================================
 
 /**

@@ -577,3 +577,290 @@ export async function getMyYearlyPayroll(userId, query) {
     },
   };
 }
+
+// ============================================
+// PAYROLL SLIP: Phiếu lương chi tiết cho frontend
+// ============================================
+
+/**
+ * Format phiếu lương tháng — cấu trúc phù hợp in/xem
+ */
+function formatMonthlySlip(row, items) {
+  // Nhóm items theo loại
+  const earnings = [];
+  const deductions = [];
+
+  for (const item of items) {
+    const formatted = formatItem(item);
+    if (["BASE", "ALLOWANCE", "BONUS"].includes(item.item_type)) {
+      earnings.push(formatted);
+    } else {
+      deductions.push(formatted);
+    }
+  }
+
+  return {
+    // Thông tin nhân viên
+    employee: {
+      id: row.employee_id,
+      code: row.employee_code,
+      name: row.employee_name,
+      email: row.employee_email,
+      department: row.department_name,
+      position: row.position_name,
+      positionCode: row.position_code,
+      bankAccountNo: row.bank_account_no,
+      bankAccountName: row.bank_account_name,
+      bankName: row.bank_name,
+    },
+    // Thông tin kỳ lương
+    period: {
+      id: row.payroll_period_id,
+      code: row.period_code,
+      monthNo: row.month_no,
+      yearNo: row.year_no,
+      startDate: row.period_start_date,
+      endDate: row.period_end_date,
+      paymentDate: row.payment_date,
+    },
+    // Tổng hợp lương
+    salary: {
+      baseSalary: row.base_salary,
+      allowanceTotal: row.allowance_total,
+      bonusTotal: row.bonus_total,
+      deductionTotal: row.deduction_total,
+      grossSalary: row.gross_salary,
+      insuranceAmount: row.insurance_amount,
+      taxAmount: row.tax_amount,
+      netSalary: row.net_salary,
+      payableSalary: row.payable_salary,
+    },
+    // Chi tiết từng khoản — phân nhóm thu nhập / khấu trừ
+    breakdown: { earnings, deductions },
+    // Metadata
+    calculationNote: row.calculation_note,
+    status: row.status,
+    generatedAt: row.generated_at,
+  };
+}
+
+/**
+ * Format tổng hợp năm
+ */
+function formatYearlySummary(employee, year, payrolls, allItems) {
+  let totalBaseSalary = 0;
+  let totalAllowance = 0;
+  let totalBonus = 0;
+  let totalDeduction = 0;
+  let totalGross = 0;
+  let totalInsurance = 0;
+  let totalTax = 0;
+  let totalNet = 0;
+  let totalPayable = 0;
+
+  const months = payrolls.map((p) => {
+    const base = parseFloat(p.base_salary) || 0;
+    const allowance = parseFloat(p.allowance_total) || 0;
+    const bonus = parseFloat(p.bonus_total) || 0;
+    const deduction = parseFloat(p.deduction_total) || 0;
+    const gross = parseFloat(p.gross_salary) || 0;
+    const insurance = parseFloat(p.insurance_amount) || 0;
+    const tax = parseFloat(p.tax_amount) || 0;
+    const net = parseFloat(p.net_salary) || 0;
+    const payable = parseFloat(p.payable_salary) || 0;
+
+    totalBaseSalary += base;
+    totalAllowance += allowance;
+    totalBonus += bonus;
+    totalDeduction += deduction;
+    totalGross += gross;
+    totalInsurance += insurance;
+    totalTax += tax;
+    totalNet += net;
+    totalPayable += payable;
+
+    // Items cho tháng này
+    const monthItems = (allItems[p.id] || []).map(formatItem);
+
+    return {
+      monthNo: p.month_no,
+      periodCode: p.period_code,
+      status: p.status,
+      paymentDate: p.payment_date,
+      baseSalary: base,
+      allowanceTotal: allowance,
+      bonusTotal: bonus,
+      deductionTotal: deduction,
+      grossSalary: gross,
+      insuranceAmount: insurance,
+      taxAmount: tax,
+      netSalary: net,
+      payableSalary: payable,
+      items: monthItems,
+    };
+  });
+
+  return {
+    employee: {
+      id: employee.id,
+      code: employee.employee_code,
+      name: employee.user_name,
+      email: employee.user_email,
+      department: employee.department_name,
+    },
+    year,
+    months,
+    summary: {
+      totalMonths: months.length,
+      totalBaseSalary,
+      totalAllowance,
+      totalBonus,
+      totalDeduction,
+      totalGross,
+      totalInsurance,
+      totalTax,
+      totalNet,
+      totalPayable,
+    },
+  };
+}
+
+/**
+ * GET /payrolls/me/monthly-slip?month=&year= — Phiếu lương tháng (self-service)
+ */
+export async function getMyMonthlySlip(userId, query) {
+  const employee = await EmployeeModel.getByUserId(userId);
+  if (!employee) {
+    const error = new Error("Không tìm thấy thông tin nhân viên của bạn");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const month = parseInt(query.month);
+  const year = parseInt(query.year);
+  if (!month || !year) {
+    const error = new Error("Vui lòng cung cấp month và year");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return _getMonthlySlip(employee.id, month, year);
+}
+
+/**
+ * GET /payrolls/me/yearly-summary?year= — Tổng hợp lương năm (self-service)
+ */
+export async function getMyYearlySummary(userId, query) {
+  const employee = await EmployeeModel.getByUserId(userId);
+  if (!employee) {
+    const error = new Error("Không tìm thấy thông tin nhân viên của bạn");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const year = parseInt(query.year);
+  if (!year) {
+    const error = new Error("Vui lòng cung cấp year");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return _getYearlySummary(employee, year);
+}
+
+/**
+ * GET /admin/payrolls/:employeeId/monthly-slip?month=&year= — Phiếu lương tháng (admin)
+ */
+export async function getAdminMonthlySlip(employeeId, query) {
+  const employee = await EmployeeModel.getById(employeeId);
+  if (!employee) {
+    const error = new Error("Không tìm thấy nhân viên");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const month = parseInt(query.month);
+  const year = parseInt(query.year);
+  if (!month || !year) {
+    const error = new Error("Vui lòng cung cấp month và year");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return _getMonthlySlip(employeeId, month, year, true);
+}
+
+/**
+ * GET /admin/payrolls/:employeeId/yearly-summary?year= — Tổng hợp năm (admin)
+ */
+export async function getAdminYearlySummary(employeeId, query) {
+  const employee = await EmployeeModel.getById(employeeId);
+  if (!employee) {
+    const error = new Error("Không tìm thấy nhân viên");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const year = parseInt(query.year);
+  if (!year) {
+    const error = new Error("Vui lòng cung cấp year");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return _getYearlySummary(employee, year, true);
+}
+
+// ============================================
+// Internal helpers
+// ============================================
+
+/**
+ * Logic chung lấy phiếu lương tháng
+ * @param {boolean} isAdmin — Admin có thể xem cả DRAFT
+ */
+async function _getMonthlySlip(employeeId, month, year, isAdmin = false) {
+  const payroll = await PayrollModel.getMonthlySlip(employeeId, month, year);
+  if (!payroll) {
+    const error = new Error(`Chưa có bảng lương tháng ${month}/${year}`);
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Nhân viên chỉ xem được FINALIZED/PAID
+  if (!isAdmin && payroll.status === "DRAFT") {
+    const error = new Error("Bảng lương đang ở trạng thái nháp, chưa công bố");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const items = await PayrollModel.getItemsByPayrollId(payroll.id);
+  return formatMonthlySlip(payroll, items);
+}
+
+/**
+ * Logic chung tổng hợp năm
+ * @param {boolean} isAdmin — Admin có thể xem cả DRAFT
+ */
+async function _getYearlySummary(employee, year, isAdmin = false) {
+  const payrolls = await PayrollModel.getYearlySummary(employee.id, year);
+
+  // Nhân viên chỉ xem FINALIZED/PAID, admin xem tất cả
+  const visiblePayrolls = isAdmin
+    ? payrolls
+    : payrolls.filter((p) => p.status !== "DRAFT");
+
+  if (visiblePayrolls.length === 0) {
+    const error = new Error(`Chưa có dữ liệu lương năm ${year}`);
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Lấy items cho tất cả payrolls (batch)
+  const allItems = {};
+  for (const p of visiblePayrolls) {
+    allItems[p.id] = await PayrollModel.getItemsByPayrollId(p.id);
+  }
+
+  return formatYearlySummary(employee, year, visiblePayrolls, allItems);
+}

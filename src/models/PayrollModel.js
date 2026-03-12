@@ -246,3 +246,51 @@ export async function getStatsByPeriod(periodId) {
   );
   return rows[0];
 }
+
+/**
+ * Lấy phiếu lương tháng đầy đủ (JOIN employee, period, position, department, bank info)
+ * Phục vụ frontend in/xem phiếu lương
+ */
+export async function getMonthlySlip(employeeId, month, year) {
+  const [rows] = await pool.query(
+    `SELECT pr.*,
+            pp.code as period_code, pp.month_no, pp.year_no,
+            pp.start_date as period_start_date, pp.end_date as period_end_date,
+            pp.payment_date, pp.status as period_status,
+            e.employee_code, e.department_id,
+            e.bank_account_no, e.bank_account_name, e.bank_name,
+            u.name as employee_name, u.email as employee_email,
+            d.name as department_name,
+            p.name as position_name, p.code as position_code,
+            eph.base_salary as history_base_salary,
+            eph.allowance_amount as history_allowance,
+            eph.salary_type
+     FROM payrolls pr
+     JOIN payroll_periods pp ON pr.payroll_period_id = pp.id
+     JOIN employees e ON pr.employee_id = e.id
+     JOIN users u ON e.user_id = u.id
+     LEFT JOIN departments d ON e.department_id = d.id
+     LEFT JOIN employee_position_history eph ON pr.position_history_id = eph.id
+     LEFT JOIN positions p ON eph.position_id = p.id
+     WHERE pr.employee_id = ? AND pp.month_no = ? AND pp.year_no = ?`,
+    [employeeId, month, year],
+  );
+  return rows[0];
+}
+
+/**
+ * Lấy tổng hợp lương năm đầy đủ (JOIN employee info)
+ */
+export async function getYearlySummary(employeeId, year) {
+  const [rows] = await pool.query(
+    `SELECT pr.*,
+            pp.code as period_code, pp.month_no, pp.year_no,
+            pp.payment_date, pp.status as period_status
+     FROM payrolls pr
+     JOIN payroll_periods pp ON pr.payroll_period_id = pp.id
+     WHERE pr.employee_id = ? AND pp.year_no = ?
+     ORDER BY pp.month_no ASC`,
+    [employeeId, year],
+  );
+  return rows;
+}

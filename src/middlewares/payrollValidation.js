@@ -37,3 +37,10 @@ export const finalizePeriodValidation = [
 export const idParamValidation = [
   param("id").isInt({ min: 1 }).withMessage("ID không hợp lệ"),
 ];
+
+/**
+ * Validation param :employeeId cho admin routes
+ */
+export const employeeIdParamValidation = [
+  param("employeeId").isInt({ min: 1 }).withMessage("employeeId không hợp lệ"),
+];

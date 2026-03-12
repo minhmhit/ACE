@@ -34,6 +34,70 @@ export async function getMyYearlyPayroll(req, res, next) {
   }
 }
 
+/**
+ * GET /payrolls/me/monthly-slip — Phiếu lương tháng (self-service)
+ * Query: ?month=3&year=2026
+ */
+export async function getMyMonthlySlip(req, res, next) {
+  try {
+    const result = await PayrollService.getMyMonthlySlip(
+      req.user.id,
+      req.query,
+    );
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /payrolls/me/yearly-summary — Tổng hợp lương năm (self-service)
+ * Query: ?year=2026
+ */
+export async function getMyYearlySummary(req, res, next) {
+  try {
+    const result = await PayrollService.getMyYearlySummary(
+      req.user.id,
+      req.query,
+    );
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /admin/payrolls/:employeeId/monthly-slip — Phiếu lương tháng (admin)
+ * Query: ?month=3&year=2026
+ */
+export async function getAdminMonthlySlip(req, res, next) {
+  try {
+    const result = await PayrollService.getAdminMonthlySlip(
+      req.params.employeeId,
+      req.query,
+    );
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /admin/payrolls/:employeeId/yearly-summary — Tổng hợp năm (admin)
+ * Query: ?year=2026
+ */
+export async function getAdminYearlySummary(req, res, next) {
+  try {
+    const result = await PayrollService.getAdminYearlySummary(
+      req.params.employeeId,
+      req.query,
+    );
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
 // ============================================
 // ADMIN / HRM
 // ============================================
