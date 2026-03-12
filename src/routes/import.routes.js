@@ -9,7 +9,7 @@ import { authenticate, authorize } from "../middlewares/auth.js";
 
 const router = express.Router();
 
-const importAuth = [authenticate, authorize(1,3)];
+const importAuth = [authenticate, authorize("ADMIN", "WAREHOUSE")];
 
 // Lấy danh sách phiếu nhập hàng (có phân trang và lọc)
 router.get("/", importAuth, ImportController.getAllImports);

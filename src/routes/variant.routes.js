@@ -19,24 +19,27 @@ router.get("/:id", VariantController.getVariantById);
 router.post(
   "/",
   authenticate,
-    authorize(1),
+  authorize("ADMIN"),
   createVariantValidation,
   validateResult,
-  VariantController.createVariant
+  VariantController.createVariant,
 );
 
 // Cập nhật variant (yêu cầu đăng nhập admin)
 router.put(
   "/:id",
   authenticate,
+  authorize("ADMIN"),
   updateVariantValidation,
   validateResult,
   VariantController.updateVariant,
-    authorize(1)
 );
 
 // Xóa variant (yêu cầu đăng nhập admin)
-router.delete("/:id",
-     authenticate, 
-     authorize(1), VariantController.deleteVariant);
+router.delete(
+  "/:id",
+  authenticate,
+  authorize("ADMIN"),
+  VariantController.deleteVariant,
+);
 export default router;

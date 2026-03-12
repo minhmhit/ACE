@@ -19,7 +19,7 @@ router.post(
 );
 
 // Admin routes
-const adminAuth = [authenticate, authorize(1,4)];
+const adminAuth = [authenticate, authorize("ADMIN", "SALE")];
 
 router.get("/",  CouponController.getAllCoupons);
 

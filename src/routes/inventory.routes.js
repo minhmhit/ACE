@@ -11,7 +11,7 @@ import { authenticate, authorize } from "../middlewares/auth.js";
 const router = express.Router();
 
 // Middleware xác thực cho nhân viên kho
-const warehouseAuth = [authenticate, authorize(1, 3)];
+const warehouseAuth = [authenticate, authorize("ADMIN", "WAREHOUSE")];
 
 // Xem tồn kho tất cả sản phẩm
 router.get("/", warehouseAuth, InventoryController.getAllInventory);

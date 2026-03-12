@@ -25,12 +25,12 @@ router.get("/:id", authenticate, OrderController.getOrderById);
 router.put("/:id/cancel", authenticate, OrderController.cancelOrder);
 
 // Admin routes
-router.get("/admin/all", authenticate,authorize(1,4), OrderController.getAllOrders);
+router.get("/admin/all", authenticate, authorize("ADMIN", "SALE"), OrderController.getAllOrders);
 
 router.put(
   "/:id/status",
   authenticate,
-  authorize(1,4),
+  authorize("ADMIN", "SALE"),
   updateOrderStatusValidation,
   validateResult,
   OrderController.updateOrderStatus

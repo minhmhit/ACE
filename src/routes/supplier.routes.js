@@ -9,7 +9,7 @@ import { authenticate, authorize } from "../middlewares/auth.js";
 const router = express.Router();
 
 // Middleware xác thực cho admin
-const adminAuth = [authenticate, authorize(1,3)];
+const adminAuth = [authenticate, authorize("ADMIN", "WAREHOUSE")];
 
 // Danh sách nhà cung cấp
 router.get("/", adminAuth, SupplierController.getAllSuppliers);
