@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 // import { errorHandler } from "./middlewares/errorHandler.js";
 import authRoutes from "./routes/auth.routes.js";
-import userRoutes from "./routes/user.routes.js";
+import { userRouter, adminUserRouter } from "./routes/user.routes.js";
 import productRoutes from "./routes/product.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import cartRoutes from "./routes/cart.routes.js";
@@ -28,11 +28,14 @@ app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
 
-// Auth routes (NEW - refactored)
+// Auth routes (login, register, refresh, logout, sessions, đổi mật khẩu)
 app.use("/api/v1/auth", authRoutes);
 
-// User routes (keep for admin operations)
-app.use("/api/v1/users", userRoutes);
+// User self-service routes (GET /users/me, PATCH /users/me)
+app.use("/api/v1/users", userRouter);
+
+// Admin user management routes (CRUD /admin/users)
+app.use("/api/v1/admin/users", adminUserRouter);
 
 app.use("/api/v1/product", productRoutes);
 app.use("/api/v1/category", categoryRoutes);

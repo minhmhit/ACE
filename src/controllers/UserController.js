@@ -1,80 +1,37 @@
 import { validationResult } from "express-validator";
 import * as UserService from "../services/UserService.js";
 
+// ============================================
+// SELF-SERVICE
+// ============================================
+
 /**
- * Controller xử lý đăng ký
+ * GET /users/me
+ * Lấy profile của user hiện tại
  */
-export async function register(req, res, next) {
+export async function getMe(req, res, next) {
   try {
-    // Kiểm tra validation
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const userData = req.body;
-    const user = await UserService.register(userData);
-
-    res.status(201).json({
-      message: "Đăng ký thành công",
-      data: user,
-    });
+    const user = await UserService.getMe(req.user.id);
+    res.json({ success: true, data: user });
   } catch (error) {
     next(error);
   }
 }
 
 /**
- * Controller xử lý đăng nhập
+ * PATCH /users/me
+ * User tự cập nhật profile: name, phoneNumber, username, avatarUrl
  */
-export async function login(req, res, next) {
+export async function updateMe(req, res, next) {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ success: false, errors: errors.array() });
     }
 
-    const { email, password } = req.body;
-    const result = await UserService.login(email, password);
-
+    const user = await UserService.updateMe(req.user.id, req.body);
     res.json({
-      message: "Đăng nhập thành công",
-      data: result,
-    });
-  } catch (error) {
-    res.json({
-      error: "Đăng nhập thất bại",
-      message: error.message,
-    });
-  }
-}
-
-/**
- * Controller lấy thông tin profile
- */
-export async function getProfile(req, res, next) {
-  try {
-    const user = await UserService.getUserById(req.user.id);
-    res.json({
-      data: user,
-    });
-  } catch (error) {
-    next(error);
-  }
-}
-
-/**
- * Controller cập nhật profile
- */
-export async function updateProfile(req, res, next) {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const user = await UserService.updateProfile(req.user.id, req.body);
-    res.json({
+      success: true,
       message: "Cập nhật thông tin thành công",
       data: user,
     });
@@ -83,36 +40,20 @@ export async function updateProfile(req, res, next) {
   }
 }
 
-/**
- * Controller đổi mật khẩu
- */
-export async function changePassword(req, res, next) {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-   const user = await UserService.changePassword(req.user.id, req.user.email, req.body);
-    res.json({
-      message: "Đổi mật khẩu thành công",
-      data: user,
-    });
-  } catch (error) {
-    next(error);
-  }
-}
+// ============================================
+// ADMIN
+// ============================================
 
 /**
- * Controller lấy danh sách users (admin only)
+ * GET /admin/users
+ * Admin lấy danh sách users (search, filter, phân trang)
+ * Query: ?page=1&limit=20&search=abc&roleId=2&isActive=true&includeDeleted=false
  */
 export async function getUsers(req, res, next) {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 100;
-
-    const result = await UserService.getAllUsers(page, limit);
+    const result = await UserService.adminGetUsers(req.query);
     res.json({
+      success: true,
       data: result.users,
       pagination: result.pagination,
     });
@@ -122,16 +63,34 @@ export async function getUsers(req, res, next) {
 }
 
 /**
- * Controller cập nhật trạng thái user (admin only)
+ * GET /admin/users/:id
+ * Admin xem chi tiết user (bao gồm soft deleted)
  */
-export async function updateUserStatus(req, res, next) {
+export async function getUserById(req, res, next) {
   try {
-    const { id } = req.params;
-    const { isActive } = req.body;
+    const user = await UserService.adminGetUserById(req.params.id);
+    res.json({ success: true, data: user });
+  } catch (error) {
+    next(error);
+  }
+}
 
-    await UserService.updateUserStatus(id, isActive);
-    res.json({
-      message: "Cập nhật trạng thái thành công",
+/**
+ * POST /admin/users
+ * Admin tạo user mới
+ */
+export async function createUser(req, res, next) {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const user = await UserService.adminCreateUser(req.body);
+    res.status(201).json({
+      success: true,
+      message: "Tạo user thành công",
+      data: user,
     });
   } catch (error) {
     next(error);
@@ -139,20 +98,60 @@ export async function updateUserStatus(req, res, next) {
 }
 
 /**
- * Controller xem chi tiết user (admin only)
+ * PATCH /admin/users/:id
+ * Admin cập nhật user (email, roleId, isActive, password, ...)
  */
-export async function getUserDetail(req, res, next) {
+export async function updateUser(req, res, next) {
   try {
-    const { id } = req.params;
-    const user = await UserService.getUserById(id);
-
-    if (!user) {
-      return res.status(404).json({
-        message: "Không tìm thấy user",
-      });
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
     }
 
+    const user = await UserService.adminUpdateUser(req.params.id, req.body);
     res.json({
+      success: true,
+      message: "Cập nhật user thành công",
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * DELETE /admin/users/:id
+ * Admin soft delete user (set deletedAt, isActive=0)
+ */
+export async function deleteUser(req, res, next) {
+  try {
+    const result = await UserService.adminDeleteUser(req.params.id);
+    res.json({ success: true, message: result.message });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * PATCH /admin/users/:id/active
+ * Admin toggle active/inactive
+ */
+export async function toggleActive(req, res, next) {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const user = await UserService.adminToggleActive(
+      req.params.id,
+      req.body.isActive,
+    );
+    res.json({
+      success: true,
+      message: req.body.isActive
+        ? "Kích hoạt user thành công"
+        : "Vô hiệu hóa user thành công",
       data: user,
     });
   } catch (error) {
