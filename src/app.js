@@ -22,6 +22,7 @@ import employeeRoutes from "./routes/employee.routes.js";
 import leaveTypeRoutes from "./routes/leaveType.routes.js";
 import leaveRequestRoutes from "./routes/leaveRequest.routes.js";
 import resignationRequestRoutes from "./routes/resignationRequest.routes.js";
+import attendanceRoutes from "./routes/attendance.routes.js";
 
 // Load env vars
 dotenv.config();
@@ -61,6 +62,7 @@ app.use("/api/v1/employees", employeeRoutes);
 app.use("/api/v1/leave-types", leaveTypeRoutes);
 app.use("/api/v1/leave-requests", leaveRequestRoutes);
 app.use("/api/v1/resignation-requests", resignationRequestRoutes);
+app.use("/api/v1/attendance", attendanceRoutes);
 // Routes
 app.get("/", (req, res) => {
   res.json({ message: "Coffee Shop API" });
