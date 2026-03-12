@@ -18,6 +18,7 @@ import uploadRoutes from "./routes/upload.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import departmentRoutes from "./routes/department.routes.js";
 import positionRoutes from "./routes/position.routes.js";
+import employeeRoutes from "./routes/employee.routes.js";
 
 // Load env vars
 dotenv.config();
@@ -53,6 +54,7 @@ app.use("/api/v1/uploads", uploadRoutes);
 app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/departments", departmentRoutes);
 app.use("/api/v1/positions", positionRoutes);
+app.use("/api/v1/employees", employeeRoutes);
 // Routes
 app.get("/", (req, res) => {
   res.json({ message: "Coffee Shop API" });
