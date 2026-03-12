@@ -2,7 +2,8 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 // import { errorHandler } from "./middlewares/errorHandler.js";
-import authRoutes from "./routes/user.routes.js";
+import authRoutes from "./routes/auth.routes.js";
+import userRoutes from "./routes/user.routes.js";
 import productRoutes from "./routes/product.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import cartRoutes from "./routes/cart.routes.js";
@@ -26,7 +27,13 @@ app.use(cors());
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
+
+// Auth routes (NEW - refactored)
 app.use("/api/v1/auth", authRoutes);
+
+// User routes (keep for admin operations)
+app.use("/api/v1/users", userRoutes);
+
 app.use("/api/v1/product", productRoutes);
 app.use("/api/v1/category", categoryRoutes);
 app.use("/api/v1/cart", cartRoutes);
