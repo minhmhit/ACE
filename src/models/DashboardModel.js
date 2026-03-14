@@ -1,5 +1,5 @@
 // Model thống kê Dashboard — chứa các query tổng hợp dữ liệu
-import pool from "../config/db.js";
+import {pool} from "../config/db.js";
 
 const DashboardModel = {
   // ==================== SALES ====================
