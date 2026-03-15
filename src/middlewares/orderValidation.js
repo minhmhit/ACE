@@ -37,6 +37,6 @@ export const updateOrderStatusValidation = [
   body("status")
     .notEmpty()
     .withMessage("Trạng thái đơn hàng không được để trống")
-    .isIn(["PENDING", "COMPLETED", "CANCELLED"])
+    .isIn(["PENDING", "COMPLETED", "CANCELLED", "SHIPPING"])
     .withMessage("Trạng thái đơn hàng không hợp lệ"),
 ];

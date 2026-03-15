@@ -1,5 +1,6 @@
 import * as CartModel from "../models/CartModel.js";
 import * as ProductModel from "../models/ProductModel.js";
+import VariantModel from "../models/VariantModel.js";
 
 /**
  * Service xem giỏ hàng
@@ -29,7 +30,7 @@ export async function addToCart(userId, { productId, variantId, quantity }) {
 
   // Kiểm tra variant nếu có
   if (variantId) {
-    const variants = await ProductModel.getProductVariants(productId);
+    const variants = await VariantModel.getVariantsByProductId(productId);
     const variant = variants.find((v) => v.id === parseInt(variantId));
     if (!variant) {
       throw new Error("Biến thể không tồn tại");

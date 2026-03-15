@@ -2,3 +2,6 @@
 .github/
 src/node_modules/
  *.md
+
+.env
+src/.env
