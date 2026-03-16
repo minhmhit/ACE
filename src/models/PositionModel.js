@@ -103,6 +103,10 @@ export async function update(id, data) {
     fields.push("is_active = ?");
     params.push(data.isActive ? 1 : 0);
   }
+   if (data.end_date !== undefined) {
+     fields.push("end_date = ?");
+     params.push(data.end_date);
+   }
 
   if (fields.length === 0) return false;
 
@@ -132,7 +136,7 @@ export async function isCodeExists(code, excludeId = null) {
 export async function countActiveEmployees(positionId) {
   const [rows] = await pool.query(
     `SELECT COUNT(*) as count FROM employee_position_history
-     WHERE position_id = ? AND end_date IS NULL`,
+     WHERE position_id = ? `,
     [positionId],
   );
   return rows[0].count;

@@ -93,7 +93,11 @@ export const createLeaveRequestValidation = [
     .withMessage("Loại nghỉ phép là bắt buộc")
     .isInt({ min: 1 })
     .withMessage("leaveTypeId phải là số nguyên dương"),
-
+//lấy loại yêu cầu mới cập nhật
+/*
+- transaction
+- trigger
+ */
   body("requestType")
     .notEmpty()
     .withMessage("Loại yêu cầu là bắt buộc")
@@ -102,6 +106,7 @@ export const createLeaveRequestValidation = [
       "HALF_DAY_MORNING",
       "HALF_DAY_AFTERNOON",
       "MULTIPLE_DAYS",
+      "ANNUAL_LEAVE",
       "OTHER",
     ])
     .withMessage(
