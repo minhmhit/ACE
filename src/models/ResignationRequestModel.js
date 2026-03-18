@@ -24,6 +24,7 @@ export async function getById(id) {
      WHERE rr.id = ?`,
     [id],
   );
+
   return rows[0];
 }
 
@@ -45,8 +46,14 @@ export async function getByEmployeeId({ employeeId, status, page, limit }) {
   const [rows] = await pool.query(
     `SELECT rr.*,
             approver.employee_code as approver_code,
-            approver_u.name as approver_name
+            approver_u.name as approver_name,
+            e.employee_code, e.department_id, e.status as employee_status,
+            u.name as employee_name, u.email as employee_email,
+            d.name as department_name
      FROM resignation_requests rr
+     LEFT JOIN employees e ON rr.employee_id = e.id
+     LEFT JOIN users u ON e.user_id = u.id
+     LEFT JOIN departments d ON e.department_id = d.id
      LEFT JOIN employees approver ON rr.approved_by_employee_id = approver.id
      LEFT JOIN users approver_u ON approver.user_id = approver_u.id
      ${whereClause}
