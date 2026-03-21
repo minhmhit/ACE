@@ -17,7 +17,7 @@ const playfairDisplay = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  title: "Coffee OOAD Frontend",
+  title: "Coffee Bot Frontend",
   description: "Nền tảng frontend cho hệ thống quản lý bán hàng cà phê bột online",
 }
 

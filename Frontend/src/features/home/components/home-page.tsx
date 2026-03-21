@@ -9,12 +9,12 @@ import { EmptyState } from "@/components/shared/states/empty-state"
 import { ErrorState } from "@/components/shared/states/error-state"
 import { LoadingState } from "@/components/shared/states/loading-state"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import {
   useFeaturedProductsQuery,
   useNewestProductsQuery,
 } from "@/features/products/hooks/use-home-products-query"
-import { productsService } from "@/services/products.service"
+import { categoriesService } from "@/services/categories.service"
 import { useQuery } from "@tanstack/react-query"
 
 import { queryKeys } from "@/constants/query-keys"
@@ -50,9 +50,12 @@ function ProductGridSection({
               <Badge variant="secondary">{product.id}</Badge>
               <h3 className="line-clamp-2 font-medium text-slate-800">{product.name}</h3>
               <p className="text-sm text-slate-600">{product.price.toLocaleString("vi-VN")} đ</p>
-              <Button asChild className="w-full">
-                <Link href={`/products/${product.id}`}>Xem chi tiết</Link>
-              </Button>
+              <Link
+                className={buttonVariants({ variant: "default" })}
+                href={`/products/${product.id}`}
+              >
+                Xem chi tiết
+              </Link>
             </GlassCard>
           ))}
         </div>
@@ -66,7 +69,7 @@ export function HomePage() {
   const newestQuery = useNewestProductsQuery(8)
   const categoriesQuery = useQuery({
     queryKey: queryKeys.categories.list,
-    queryFn: () => productsService.getList({ page: 1, limit: 6 }),
+    queryFn: categoriesService.getList,
     staleTime: 5 * 60 * 1000,
   })
 
@@ -86,12 +89,12 @@ export function HomePage() {
             ràng.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Button asChild>
-              <Link href="/products">Mua ngay</Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/products">Khám phá sản phẩm</Link>
-            </Button>
+            <Link className={buttonVariants({ variant: "default" })} href="/products">
+              Mua ngay
+            </Link>
+            <Link className={buttonVariants({ variant: "outline" })} href="/products">
+              Khám phá sản phẩm
+            </Link>
           </div>
         </GlassCard>
 
@@ -116,7 +119,7 @@ export function HomePage() {
         {categoriesQuery.isError ? <ErrorState /> : null}
         {!categoriesQuery.isLoading && !categoriesQuery.isError ? (
           <div className="grid gap-4 md:grid-cols-3">
-            {(categoriesQuery.data?.data ?? []).slice(0, 3).map((item) => (
+            {(categoriesQuery.data ?? []).slice(0, 3).map((item) => (
               <GlassCard key={item.id} className="p-5">
                 <h3 className="font-medium text-slate-800">{item.name}</h3>
                 <p className="mt-1 text-sm text-slate-600">Khám phá ngay các lựa chọn phù hợp.</p>
@@ -146,8 +149,8 @@ export function HomePage() {
         <GlassCard className="p-6">
           <h3 className="font-heading text-xl font-semibold">Khách hàng nói gì?</h3>
           <p className="mt-3 text-sm text-slate-600">
-            "Đặt hàng nhanh, hương vị ổn định, đóng gói đẹp. Tôi đã mua lại 4 lần trong tháng." -
-            Anh Minh, Q.3
+            &quot;Đặt hàng nhanh, hương vị ổn định, đóng gói đẹp. Tôi đã mua lại 4 lần trong
+            tháng.&quot; - Anh Minh, Q.3
           </p>
         </GlassCard>
         <GlassCard className="p-6">
@@ -155,9 +158,12 @@ export function HomePage() {
           <p className="mt-3 text-sm text-slate-600">
             Vào trang sản phẩm để lọc theo mức rang, vị chua, vị đắng và mức giá phù hợp.
           </p>
-          <Button className="mt-4" asChild>
-            <Link href="/products">Đi tới trang mua hàng</Link>
-          </Button>
+          <Link
+            className={`${buttonVariants({ variant: "default" })} mt-4 inline-flex`}
+            href="/products"
+          >
+            Đi tới trang mua hàng
+          </Link>
         </GlassCard>
       </section>
     </PageContainer>

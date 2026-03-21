@@ -37,7 +37,7 @@ export function EndUserShell({ children }: EndUserShellProps) {
             </button>
 
             <Link href="/" className="text-xl font-heading font-semibold tracking-tight">
-              Coffee OOAD
+              Coffee Bot
             </Link>
 
             <div className="hidden flex-1 px-4 md:block">
@@ -96,7 +96,7 @@ export function EndUserShell({ children }: EndUserShellProps) {
         <PageContainer>
           <div className="grid gap-6 md:grid-cols-3">
             <div>
-              <h3 className="font-heading text-lg font-semibold">Coffee OOAD</h3>
+              <h3 className="font-heading text-lg font-semibold">Coffee Bot</h3>
               <p className="mt-2 text-sm text-slate-600">
                 Cà phê bột chuẩn vị, giao nhanh, trải nghiệm mua hàng hiện đại.
               </p>
