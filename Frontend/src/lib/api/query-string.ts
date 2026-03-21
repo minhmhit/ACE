@@ -1,12 +1,18 @@
 export type QueryValue = string | number | boolean | null | undefined
 
-export type QueryParams = Record<string, QueryValue>
+export type QueryParams = object
 
-export function toQueryString(params: QueryParams = {}) {
+export function toQueryString<T extends QueryParams>(params: T = {} as T) {
   const searchParams = new URLSearchParams()
 
-  Object.entries(params).forEach(([key, value]) => {
-    if (value === null || value === undefined || value === "") {
+  Object.entries(params as Record<string, unknown>).forEach(([key, value]) => {
+    if (
+      value === null ||
+      value === undefined ||
+      value === "" ||
+      typeof value === "object" ||
+      typeof value === "function"
+    ) {
       return
     }
 

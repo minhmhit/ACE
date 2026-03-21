@@ -4,7 +4,7 @@ export const queryKeys = {
     sessions: ["auth", "sessions"] as const,
   },
   products: {
-    products: (params?: Record<string, string | number | boolean>) =>
+    products: <T>(params?: T) =>
       ["products", "list", params] as const,
     productDetail: (productId: number | string) => ["products", "detail", productId] as const,
     featured: ["products", "featured"] as const,
@@ -18,23 +18,23 @@ export const queryKeys = {
     detail: ["cart", "detail"] as const,
   },
   orders: {
-    myList: (params?: Record<string, string | number | boolean>) =>
+    myList: <T>(params?: T) =>
       ["orders", "my-list", params] as const,
     detail: (orderId: number | string) => ["orders", "detail", orderId] as const,
   },
   payments: {
     methods: ["payments", "methods"] as const,
-    myHistory: (params?: Record<string, string | number | boolean>) =>
+    myHistory: <T>(params?: T) =>
       ["payments", "my-history", params] as const,
     detail: (paymentId: number | string) => ["payments", "detail", paymentId] as const,
   },
   employee: {
     me: ["employee", "me"] as const,
-    attendance: (params?: Record<string, string | number | boolean>) =>
+    attendance: <T>(params?: T) =>
       ["employee", "attendance", params] as const,
-    leaveRequests: (params?: Record<string, string | number | boolean>) =>
+    leaveRequests: <T>(params?: T) =>
       ["employee", "leave-requests", params] as const,
-    payrolls: (params?: Record<string, string | number | boolean>) =>
+    payrolls: <T>(params?: T) =>
       ["employee", "payrolls", params] as const,
   },
 } as const

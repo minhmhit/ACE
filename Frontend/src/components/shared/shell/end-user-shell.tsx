@@ -6,7 +6,9 @@ import { useState } from "react"
 
 import { SearchInput } from "@/components/shared/common/search-input"
 import { PageContainer } from "@/components/shared/common/page-container"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { useCartQuery } from "@/features/cart/hooks/use-cart-query"
+import { useAuthStore } from "@/stores/auth.store"
 
 interface EndUserShellProps {
   children: React.ReactNode
@@ -22,6 +24,10 @@ const navItems = [
 
 export function EndUserShell({ children }: EndUserShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const currentUser = useAuthStore((state) => state.currentUser)
+  const cartQuery = useCartQuery(Boolean(currentUser))
+
+  const cartCount = cartQuery.data?.totalQuantity ?? 0
 
   return (
     <div className="min-h-screen bg-[linear-gradient(160deg,#f4f8f6_0%,#e8eef8_50%,#fdf5ea_100%)] text-slate-800">
@@ -57,10 +63,13 @@ export function EndUserShell({ children }: EndUserShellProps) {
             </nav>
 
             <div className="ml-auto flex items-center gap-2 md:ml-0">
-              <Button variant="ghost" className="gap-2">
+              <Link href="/cart" className={`${buttonVariants({ variant: "ghost" })} gap-2`}>
                 <ShoppingBag className="h-4 w-4" />
                 <span className="hidden sm:inline">Giỏ hàng</span>
-              </Button>
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-100 px-1 text-xs text-emerald-700">
+                  {cartCount}
+                </span>
+              </Link>
               <Button variant="ghost" size="icon">
                 <UserRound className="h-4 w-4" />
               </Button>

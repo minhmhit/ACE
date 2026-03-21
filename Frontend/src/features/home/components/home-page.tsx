@@ -8,14 +8,15 @@ import { SectionHeader } from "@/components/shared/common/section-header"
 import { EmptyState } from "@/components/shared/states/empty-state"
 import { ErrorState } from "@/components/shared/states/error-state"
 import { LoadingState } from "@/components/shared/states/loading-state"
-import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
+import { ProductCard } from "@/features/products/components/product-card"
 import {
   useFeaturedProductsQuery,
   useNewestProductsQuery,
 } from "@/features/products/hooks/use-home-products-query"
 import { categoriesService } from "@/services/categories.service"
 import { useQuery } from "@tanstack/react-query"
+import type { Product } from "@/types/domain/product.types"
 
 import { queryKeys } from "@/constants/query-keys"
 
@@ -30,7 +31,7 @@ function ProductGridSection({
   description: string
   loading: boolean
   error: boolean
-  items: Array<{ id: number; name: string; price: number }>
+  items: Product[]
 }) {
   return (
     <section className="space-y-4">
@@ -46,17 +47,7 @@ function ProductGridSection({
       {!loading && !error && items.length ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((product) => (
-            <GlassCard key={product.id} className="space-y-3 p-4">
-              <Badge variant="secondary">{product.id}</Badge>
-              <h3 className="line-clamp-2 font-medium text-slate-800">{product.name}</h3>
-              <p className="text-sm text-slate-600">{product.price.toLocaleString("vi-VN")} đ</p>
-              <Link
-                className={buttonVariants({ variant: "default" })}
-                href={`/products/${product.id}`}
-              >
-                Xem chi tiết
-              </Link>
-            </GlassCard>
+            <ProductCard key={product.id} product={product} mode="grid" />
           ))}
         </div>
       ) : null}
@@ -80,7 +71,7 @@ export function HomePage() {
     <PageContainer className="space-y-10">
       <section className="grid gap-5 md:grid-cols-[1.3fr_1fr]">
         <GlassCard className="space-y-4 p-8">
-          <p className="text-xs uppercase tracking-[0.2em] text-emerald-700">Coffee OOAD</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-emerald-700">Coffee Bot</p>
           <h1 className="text-3xl font-heading font-semibold text-slate-800 md:text-5xl">
             Cà phê bột nguyên chất cho mọi phong cách thưởng thức
           </h1>

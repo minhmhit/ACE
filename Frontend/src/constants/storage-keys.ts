@@ -1,5 +1,5 @@
 export const STORAGE_KEYS = {
-  auth: "coffee_ooad_auth",
-  accessToken: "coffee_ooad_access_token",
-  refreshToken: "coffee_ooad_refresh_token",
+  auth: "coffee_bot_auth",
+  accessToken: "coffee_bot_access_token",
+  refreshToken: "coffee_bot_refresh_token",
 } as const

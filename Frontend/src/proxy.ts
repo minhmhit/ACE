@@ -6,7 +6,7 @@ const AUTH_COOKIE = "coffee_auth_meta"
 const protectedPrefix = ["/admin", "/employee"]
 const adminPrefix = ["/admin"]
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   const needsAuth = protectedPrefix.some((prefix) => pathname.startsWith(prefix))
