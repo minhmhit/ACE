@@ -504,3 +504,13 @@ PENDING → COMPLETED (khi payment SUCCESS)
 PENDING → CANCELLED (user hoặc admin)
 PENDING → SHIPPING → COMPLETED
 ```
+
+### Dashboard apis
+Method	Path	Query params	Mô tả
+GET	/sales	from, to	Doanh thu, revenue by day, payment breakdown
+GET	/orders	recentLimit	Thống kê đơn hàng theo status + đơn gần nhất
+GET	/products/top	from, to, limit	Top sản phẩm bán chạy
+GET	/products/low-stock	threshold	Sản phẩm tồn kho thấp
+GET	/hr	—	Nhân sự, phòng ban, nghỉ phép/nghỉ việc pending
+GET	/payroll	periodId	Tổng lương theo kỳ (mặc định kỳ mới nhất)
+GET	/overview	—	Tổng quan compact toàn hệ thống
