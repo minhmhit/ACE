@@ -103,8 +103,8 @@ export default function ProductsPage() {
         <>
           <ProductGrid products={sortedItems} mode={view} />
           <PaginationControls
-            page={productsQuery.data?.pagination.page ?? page}
-            totalPages={productsQuery.data?.pagination.totalPages ?? 1}
+            page={productsQuery.data?.pagination?.page ?? page}
+            totalPages={productsQuery.data?.pagination?.totalPages ?? 1}
             onChangePage={(nextPage) => updateQuery({ page: nextPage })}
           />
         </>
