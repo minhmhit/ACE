@@ -167,13 +167,13 @@ export async function createLeaveRequest(userId, data) {
   }
 
   // 4. Validate attachment nếu loại nghỉ yêu cầu
-  if (leaveType.requires_attachment && !data.attachmentUrl) {
-    const error = new Error(
-      `Loại nghỉ "${leaveType.name}" yêu cầu đính kèm giấy tờ (ví dụ: giấy khám bệnh, giấy xác nhận thai sản)`,
-    );
-    error.statusCode = 400;
-    throw error;
-  }
+  // if (leaveType.requires_attachment && !data.attachmentUrl) {
+  //   const error = new Error(
+  //     `Loại nghỉ "${leaveType.name}" yêu cầu đính kèm giấy tờ (ví dụ: giấy khám bệnh, giấy xác nhận thai sản)`,
+  //   );
+  //   error.statusCode = 400;
+  //   throw error;
+  // }
 
   // 5. Validate max_days_per_year (nếu có)
   if (leaveType.max_days_per_year) {

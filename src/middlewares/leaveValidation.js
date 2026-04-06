@@ -93,8 +93,8 @@ export const createLeaveRequestValidation = [
     .withMessage("Loại nghỉ phép là bắt buộc")
     .isInt({ min: 1 })
     .withMessage("leaveTypeId phải là số nguyên dương"),
-//lấy loại yêu cầu mới cập nhật
-/*
+  //lấy loại yêu cầu mới cập nhật
+  /*
 - transaction
 - trigger
  */
@@ -107,10 +107,13 @@ export const createLeaveRequestValidation = [
       "HALF_DAY_AFTERNOON",
       "MULTIPLE_DAYS",
       "ANNUAL_LEAVE",
+      "SICK_LEAVE",
+      "MATERNITY_LEAVE",
+      "UNPAID_LEAVE",
       "OTHER",
     ])
     .withMessage(
-      "requestType phải là một trong: FULL_DAY, HALF_DAY_MORNING, HALF_DAY_AFTERNOON, MULTIPLE_DAYS, OTHER",
+      "requestType phải là một trong: FULL_DAY, HALF_DAY_MORNING, HALF_DAY_AFTERNOON, MULTIPLE_DAYS,SICK_LEAVE, MATERNITY_LEAVE, UNPAID_LEAVE, OTHER",
     ),
 
   body("startDate")
