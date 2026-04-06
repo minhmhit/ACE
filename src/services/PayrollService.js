@@ -9,6 +9,11 @@ import * as AttendanceModel from "../models/AttendanceModel.js";
 // CONSTANTS
 // ============================================
 const INSURANCE_RATE = 0.105; // 10.5% bảo hiểm
+const TAX_RATE = 0; // Có thể cấu hình sau theo chính sách thuế
+const STANDARD_WORK_DAYS = 26;
+const OVERTIME_HOURLY_RATE = 100000;
+const LATE_DAY_PENALTY_RATE = 100000;
+const PAID_LEAVE_FREE_DAYS = 3;
 
 // ============================================
 // Format helpers
@@ -109,6 +114,8 @@ async function generateForEmployee(
   let presentDays = 0;
   let paidLeaveDays = 0;
   let unpaidLeaveDays = 0;
+  let absentDays = 0;
+  let lateDays = 0; // Chưa có dữ liệu đi trễ riêng, để 0 và mở rộng sau
   let totalWorkMinutes = 0;
   let totalOvertimeMinutes = 0;
 
@@ -129,7 +136,7 @@ async function generateForEmployee(
         unpaidLeaveDays++;
         break;
       case "ABSENT":
-        // Ngày vắng mặt không tính lương
+        absentDays++;
         break;
     }
   }
@@ -137,20 +144,51 @@ async function generateForEmployee(
   // 3. Tính lương snapshot
   // Bonus, deduction mặc định = 0 (có thể mở rộng sau)
   const bonusTotal = 0;
-  const deductionTotal = 0;
+  const deductionTotal = 0; // Khoản trừ khác
+
+  // Prorate theo ngày công thực tế
+  const unpaidEquivalentDays = unpaidLeaveDays + absentDays;
+  const workDays = Math.max(STANDARD_WORK_DAYS - unpaidEquivalentDays, 0);
+  const salaryPerDay = baseSalary / STANDARD_WORK_DAYS;
+  const salaryBaseAfterAttendance = Math.round(salaryPerDay * workDays);
+
+  // Nghỉ có phép vượt ngưỡng miễn trừ sẽ bị trừ thêm
+  const paidLeavePenaltyDays = Math.max(
+    paidLeaveDays - PAID_LEAVE_FREE_DAYS,
+    0,
+  );
+  const paidLeavePenaltyAmount = Math.round(
+    salaryPerDay * paidLeavePenaltyDays,
+  );
+
+  // Tăng ca theo giờ
+  const overtimeHours = totalOvertimeMinutes / 60;
+  const overtimeAmount = Math.round(overtimeHours * OVERTIME_HOURLY_RATE);
+
+  // Đi trễ (placeholder: 0 cho đến khi có nguồn dữ liệu)
+  const latePenaltyAmount = lateDays * LATE_DAY_PENALTY_RATE;
+
+  // Bảo hiểm + thuế
+  const insuranceAmount = Math.round(baseSalary * INSURANCE_RATE);
+  const taxAmount = Math.round(baseSalary * TAX_RATE);
 
   const grossSalary =
-    baseSalary + allowanceAmount + bonusTotal - deductionTotal;
-  const insuranceAmount = Math.round(baseSalary * INSURANCE_RATE);
-  const taxAmount = 0; // Mở rộng sau nếu cần thuế TNCN
+    salaryBaseAfterAttendance + allowanceAmount + bonusTotal + overtimeAmount;
+  const totalDeductions =
+    insuranceAmount +
+    deductionTotal +
+    taxAmount +
+    latePenaltyAmount +
+    paidLeavePenaltyAmount;
 
-  const netSalary = grossSalary - insuranceAmount - taxAmount;
-  const payableSalary = netSalary; // Có thể trừ thêm nếu nghỉ không phép
+  const netSalary = grossSalary - totalDeductions;
+  const payableSalary = netSalary;
 
   const calculationNote =
     `Lương tháng ${String(period.month_no).padStart(2, "0")}/${period.year_no}. ` +
-    `Ngày công: ${presentDays}, nghỉ phép: ${paidLeaveDays}, nghỉ KL: ${unpaidLeaveDays}. ` +
-    `OT: ${totalOvertimeMinutes} phút.`;
+    `Ngày công chuẩn: ${STANDARD_WORK_DAYS}, ngày làm thực tính lương: ${workDays}. ` +
+    `Có mặt: ${presentDays}, nghỉ phép: ${paidLeaveDays}, nghỉ KL: ${unpaidLeaveDays}, vắng: ${absentDays}, đi trễ: ${lateDays}. ` +
+    `OT: ${totalOvertimeMinutes} phút. Lương sau công: ${salaryBaseAfterAttendance}.`;
 
   // 4. Xoá payroll cũ nếu có (re-generate DRAFT)
   const existing = await PayrollModel.getByPeriodAndEmployee(
@@ -190,10 +228,10 @@ async function generateForEmployee(
   const items = [
     {
       itemType: "BASE",
-      itemCode: "BASE_SALARY",
-      itemName: "Lương cơ bản",
-      amount: baseSalary,
-      formulaText: "Theo lịch sử chức vụ",
+      itemCode: "BASE_SALARY_PRORATED",
+      itemName: "Lương cơ bản theo ngày công",
+      amount: salaryBaseAfterAttendance,
+      formulaText: `${baseSalary}/${STANDARD_WORK_DAYS} * ${workDays}`,
     },
     {
       itemType: "ALLOWANCE",
@@ -201,6 +239,13 @@ async function generateForEmployee(
       itemName: "Phụ cấp",
       amount: allowanceAmount,
       formulaText: "Theo chính sách vị trí",
+    },
+    {
+      itemType: "BONUS",
+      itemCode: "OVERTIME",
+      itemName: "Tiền tăng ca",
+      amount: overtimeAmount,
+      formulaText: `${overtimeHours.toFixed(2)} giờ * ${OVERTIME_HOURLY_RATE}`,
     },
   ];
 
@@ -229,6 +274,22 @@ async function generateForEmployee(
     itemName: "Bảo hiểm",
     amount: insuranceAmount,
     formulaText: `${INSURANCE_RATE * 100}% lương cơ bản`,
+  });
+
+  items.push({
+    itemType: "DEDUCTION",
+    itemCode: "LATE_PENALTY",
+    itemName: "Phạt đi trễ",
+    amount: latePenaltyAmount,
+    formulaText: `${lateDays} ngày * ${LATE_DAY_PENALTY_RATE}`,
+  });
+
+  items.push({
+    itemType: "DEDUCTION",
+    itemCode: "PAID_LEAVE_OVER_LIMIT",
+    itemName: "Khấu trừ nghỉ phép vượt mức",
+    amount: paidLeavePenaltyAmount,
+    formulaText: `max(${paidLeaveDays}-${PAID_LEAVE_FREE_DAYS}, 0) * ${baseSalary}/${STANDARD_WORK_DAYS}`,
   });
 
   if (taxAmount > 0) {
