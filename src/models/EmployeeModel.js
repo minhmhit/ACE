@@ -117,7 +117,8 @@ export async function getAll({
             u.name as user_name, u.email as user_email, u.username,
             u.phoneNumber as phone_number, u.avatarUrl as avatar_url,
             d.code as department_code, d.name as department_name,
-            eph.position_id as current_position_id,
+            eph.position_id as current_position_id,eph.base_salary as base_salary,
+            eph.allowance_amount as allowance_amount, eph.salary_type as salary_type,
             p.code as current_position_code,
             p.name as current_position_name
      FROM employees e
