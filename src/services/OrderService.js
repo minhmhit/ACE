@@ -1,10 +1,16 @@
 import OrderModel from "../models/OrderModel.js";
 import * as CartModel from "../models/CartModel.js";
+import * as PaymentService from "./PaymentService.js";
 
 class OrderService {
   // Tạo đơn hàng mới từ cart items được gửi lên
   static async createOrder(userId, orderData) {
     try {
+      const paymentMethodCode = orderData.paymentMethodCode || "COD";
+      if (!["COD", "VNPAY"].includes(paymentMethodCode)) {
+        throw new Error("Phương thức thanh toán không hợp lệ (COD, VNPAY)");
+      }
+
       // Validate cartItems
       if (
         !orderData.cartItems ||
@@ -47,7 +53,7 @@ class OrderService {
         // Kiểm tra số lượng yêu cầu không vượt quá số lượng trong giỏ
         if (requestItem.quantity > cartItem.quantity) {
           throw new Error(
-            `Số lượng sản phẩm "${cartItem.productName}" vượt quá số lượng trong giỏ hàng`
+            `Số lượng sản phẩm "${cartItem.productName}" vượt quá số lượng trong giỏ hàng`,
           );
         }
 
@@ -68,10 +74,29 @@ class OrderService {
           couponId: orderData.couponId || null,
           shipAddress: orderData.shipAddress || null,
         },
-        validCartItems
+        validCartItems,
+        {
+          // COD: finalize ngay. VNPAY: chỉ tạo đơn + items, chờ IPN mới finalize.
+          finalizeSale: paymentMethodCode === "COD",
+        },
       );
 
-      return await OrderModel.getOrderById(orderId);
+      const order = await OrderModel.getOrderById(orderId);
+
+      if (paymentMethodCode === "VNPAY") {
+        const payment = await PaymentService.createPayment(userId, {
+          orderId,
+          paymentMethodCode: "VNPAY",
+          orderInfo: `Thanh toan don hang ${orderId}`,
+        });
+
+        return {
+          ...order,
+          payment,
+        };
+      }
+
+      return order;
     } catch (error) {
       throw error;
     }

@@ -1,6 +1,7 @@
 import { VNPay } from "vnpay/vnpay";
 import * as PaymentModel from "../models/PaymentModel.js";
 import * as ReceiptModel from "../models/ReceiptModel.js";
+import OrderModel from "../models/OrderModel.js";
 import { pool } from "../config/db.js";
 import { vnpayConfig, validateVnpayConfig } from "../config/vnpay.js";
 import {
@@ -117,53 +118,16 @@ class VnpayService {
       throw error;
     }
 
-    let paymentStatus = "FAILED";
-    let orderStatus = "PENDING";
-    let message = "Thanh toán thất bại";
+    const order = await PaymentModel.getOrderById(orderId);
 
-    if (responseCode === "00") {
-      paymentStatus = "SUCCESS";
-      orderStatus = "COMPLETED";
-      message = "Thanh toán thành công";
-
-      // Transaction: payment SUCCESS + order COMPLETED + tạo receipt + update ewallet
-      const conn = await pool.getConnection();
-      try {
-        await conn.beginTransaction();
-
-        await PaymentModel.updateStatusConn(
-          conn,
-          payment.payment_id,
-          paymentStatus,
-        );
-        await PaymentModel.updateOrderStatusConn(conn, orderId, orderStatus);
-
-        await ReceiptModel.create(conn, {
-          paymentId: payment.payment_id,
-          amount: payment.amount,
-          orderId: orderId,
-          paymentMethod: "vnpay",
-          description: `Biên nhận VNPay đơn hàng #${orderId}`,
-        });
-
-        await conn.commit();
-      } catch (err) {
-        await conn.rollback();
-        throw err;
-      } finally {
-        conn.release();
-      }
-
-      // Cập nhật ewallet details
-      await PaymentModel.updateEwalletDetails(
-        payment.payment_id,
-        transactionNo,
-        responseCode,
-      );
-    } else {
-      await PaymentModel.updateStatus(payment.payment_id, paymentStatus);
-      message = getVnpayResponseMessage(responseCode);
-    }
+    // returnUrl chỉ để verify và hiển thị trạng thái cho user,
+    // không finalize nghiệp vụ (không trừ kho, không xóa cart, không chốt order/payment).
+    const paymentStatus = payment.status;
+    const orderStatus = order?.status;
+    const message =
+      responseCode === "00"
+        ? "Giao dịch đã được ghi nhận, chờ IPN xác nhận"
+        : getVnpayResponseMessage(responseCode);
 
     return {
       success: responseCode === "00",
@@ -212,22 +176,54 @@ class VnpayService {
       }
 
       if (responseCode === "00") {
+        if (payment.status !== "PENDING") {
+          return { RspCode: "02", Message: "Order already confirmed" };
+        }
+
         const conn = await pool.getConnection();
         try {
           await conn.beginTransaction();
+
           await PaymentModel.updateStatusConn(
             conn,
             payment.payment_id,
             "SUCCESS",
           );
-          await PaymentModel.updateOrderStatusConn(conn, orderId, "COMPLETED");
-          await ReceiptModel.create(conn, {
-            paymentId: payment.payment_id,
-            amount: payment.amount,
-            orderId: orderId,
-            paymentMethod: "vnpay",
-            description: `Biên nhận VNPay IPN đơn hàng #${orderId}`,
-          });
+
+          // Finalize nghiệp vụ bán hàng tại IPN success
+          await OrderModel.finalizeOrderAfterPayment(conn, orderId);
+
+          const [existingReceipt] = await conn.query(
+            `SELECT id FROM receipts WHERE payment_id = ? LIMIT 1`,
+            [payment.payment_id],
+          );
+
+          if (existingReceipt.length === 0) {
+            await ReceiptModel.create(conn, {
+              paymentId: payment.payment_id,
+              amount: payment.amount,
+              orderId: orderId,
+              paymentMethod: "vnpay",
+              description: `Biên nhận VNPay IPN đơn hàng #${orderId}`,
+            });
+          }
+
+          await conn.query(
+            `UPDATE payment_ewallet_details
+             SET transaction_id = ?, response_code = ?, paid_at = NOW()
+             WHERE payment_id = ?`,
+            [
+              vnpayIpnData.vnp_TransactionNo || null,
+              responseCode,
+              payment.payment_id,
+            ],
+          );
+
+          await conn.query(
+            `UPDATE orders SET status = 'COMPLETED' WHERE id = ? AND status <> 'COMPLETED'`,
+            [orderId],
+          );
+
           await conn.commit();
         } catch (err) {
           await conn.rollback();
@@ -237,7 +233,39 @@ class VnpayService {
         }
         return { RspCode: "00", Message: "Success" };
       } else {
-        await PaymentModel.updateStatus(payment.payment_id, "FAILED");
+        if (payment.status === "PENDING") {
+          const conn = await pool.getConnection();
+          try {
+            await conn.beginTransaction();
+            await PaymentModel.updateStatusConn(
+              conn,
+              payment.payment_id,
+              "FAILED",
+            );
+            await PaymentModel.updateOrderStatusConn(
+              conn,
+              orderId,
+              "CANCELLED",
+            );
+            await conn.query(
+              `UPDATE payment_ewallet_details
+               SET transaction_id = ?, response_code = ?, paid_at = NOW()
+               WHERE payment_id = ?`,
+              [
+                vnpayIpnData.vnp_TransactionNo || null,
+                responseCode,
+                payment.payment_id,
+              ],
+            );
+            await conn.commit();
+          } catch (err) {
+            await conn.rollback();
+            throw err;
+          } finally {
+            conn.release();
+          }
+        }
+
         return { RspCode: "00", Message: "Success" };
       }
     } catch (error) {

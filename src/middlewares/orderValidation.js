@@ -31,6 +31,11 @@ export const createOrderValidation = [
     .optional({ nullable: true })
     .isInt({ min: 1 })
     .withMessage("Mã giảm giá không hợp lệ"),
+
+  body("paymentMethodCode")
+    .optional()
+    .isIn(["COD", "VNPAY"])
+    .withMessage("Phương thức thanh toán không hợp lệ (COD, VNPAY)"),
 ];
 
 export const updateOrderStatusValidation = [

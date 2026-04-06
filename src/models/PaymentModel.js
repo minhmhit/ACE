@@ -116,7 +116,7 @@ export async function createEwalletDetails(conn, paymentId, data) {
       data.provider,
       data.transactionId || null,
       data.responseCode || null,
-      data.paidAt || null,
+      data.paidAt,
     ],
   );
 }

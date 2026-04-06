@@ -2,7 +2,8 @@ import { pool } from "../config/db.js";
 
 class OrderModel {
   // Tạo đơn hàng mới từ cart items
-  static async createOrder(userId, orderData, cartItems) {
+  static async createOrder(userId, orderData, cartItems, options = {}) {
+    const { finalizeSale = true } = options;
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
@@ -18,7 +19,7 @@ class OrderModel {
         const [coupon] = await conn.query(
           `SELECT discountPercent FROM coupons 
            WHERE id = ? AND validFrom <= NOW() AND validUntil >= NOW()`,
-          [orderData.couponId]
+          [orderData.couponId],
         );
 
         if (coupon.length > 0) {
@@ -37,7 +38,7 @@ class OrderModel {
           totalAmount,
           orderData.shipAddress || null,
           orderData.couponId || null,
-        ]
+        ],
       );
 
       const orderId = order.insertId;
@@ -47,12 +48,12 @@ class OrderModel {
         // Kiểm tra tồn kho
         const [inventory] = await conn.query(
           `SELECT quantity FROM inventories WHERE productId = ?`,
-          [item.productId]
+          [item.productId],
         );
 
         if (!inventory.length || inventory[0].quantity < item.quantity) {
           throw new Error(
-            `Sản phẩm ID ${item.productId} không đủ hàng trong kho`
+            `Sản phẩm ID ${item.productId} không đủ hàng trong kho`,
           );
         }
 
@@ -66,15 +67,19 @@ class OrderModel {
             item.variantId || null,
             item.quantity,
             item.unitPrice,
-          ]
+          ],
         );
+
+        if (!finalizeSale) {
+          continue;
+        }
 
         // Giảm số lượng trong kho
         await conn.query(
           `UPDATE inventories 
            SET quantity = quantity - ? 
            WHERE productId = ?`,
-          [item.quantity, item.productId]
+          [item.quantity, item.productId],
         );
 
         // Giảm số lượng trong cart hoặc xóa nếu = 0
@@ -104,6 +109,106 @@ class OrderModel {
     }
   }
 
+  // Finalize đơn hàng sau khi thanh toán online thành công (idempotent)
+  static async finalizeOrderAfterPayment(conn, orderId) {
+    const [orderRows] = await conn.query(
+      `SELECT id, userId, status FROM orders WHERE id = ? FOR UPDATE`,
+      [orderId],
+    );
+
+    if (orderRows.length === 0) {
+      throw new Error("Không tìm thấy đơn hàng");
+    }
+
+    const order = orderRows[0];
+
+    // Tránh xử lý lặp callback/IPN
+    if (order.status === "COMPLETED") {
+      return { alreadyFinalized: true };
+    }
+
+    if (order.status === "CANCELLED") {
+      throw new Error("Đơn hàng đã bị hủy, không thể finalize");
+    }
+
+    const [items] = await conn.query(
+      `SELECT productId, variantId, quantity FROM order_items WHERE orderId = ?`,
+      [orderId],
+    );
+
+    for (const item of items) {
+      const [inventory] = await conn.query(
+        `SELECT quantity FROM inventories WHERE productId = ? FOR UPDATE`,
+        [item.productId],
+      );
+
+      if (!inventory.length || inventory[0].quantity < item.quantity) {
+        throw new Error(
+          `Sản phẩm ID ${item.productId} không đủ hàng trong kho để finalize`,
+        );
+      }
+
+      await conn.query(
+        `UPDATE inventories
+         SET quantity = quantity - ?
+         WHERE productId = ?`,
+        [item.quantity, item.productId],
+      );
+    }
+
+    const [carts] = await conn.query(`SELECT id FROM carts WHERE userId = ?`, [
+      order.userId,
+    ]);
+
+    if (carts.length > 0) {
+      const cartId = carts[0].id;
+
+      for (const item of items) {
+        let cartItems;
+
+        if (item.variantId) {
+          [cartItems] = await conn.query(
+            `SELECT id, quantity FROM cart_items
+             WHERE cartId = ? AND productId = ? AND variantId = ?
+             LIMIT 1`,
+            [cartId, item.productId, item.variantId],
+          );
+        } else {
+          [cartItems] = await conn.query(
+            `SELECT id, quantity FROM cart_items
+             WHERE cartId = ? AND productId = ? AND variantId IS NULL
+             LIMIT 1`,
+            [cartId, item.productId],
+          );
+        }
+
+        if (!cartItems.length) {
+          continue;
+        }
+
+        const cartItem = cartItems[0];
+        const newQuantity = Number(cartItem.quantity) - Number(item.quantity);
+
+        if (newQuantity <= 0) {
+          await conn.query(`DELETE FROM cart_items WHERE id = ?`, [
+            cartItem.id,
+          ]);
+        } else {
+          await conn.query(`UPDATE cart_items SET quantity = ? WHERE id = ?`, [
+            newQuantity,
+            cartItem.id,
+          ]);
+        }
+      }
+    }
+
+    await conn.query(`UPDATE orders SET status = 'COMPLETED' WHERE id = ?`, [
+      orderId,
+    ]);
+
+    return { alreadyFinalized: false };
+  }
+
   // Lấy danh sách đơn hàng của user
   static async getOrdersByUser(userId, page = 1, limit = 10) {
     const offset = (page - 1) * limit;
@@ -114,7 +219,7 @@ class OrderModel {
        WHERE o.userId = ?
        ORDER BY o.orderDate DESC
        LIMIT ? OFFSET ?`,
-      [userId, userId, limit, offset]
+      [userId, userId, limit, offset],
     );
     return orders;
   }
@@ -146,7 +251,7 @@ class OrderModel {
        JOIN products p ON oi.productId = p.id
        LEFT JOIN variants v ON oi.variantId = v.id
        WHERE oi.orderId = ?`,
-      [orderId]
+      [orderId],
     );
 
     return {
@@ -165,7 +270,7 @@ class OrderModel {
       const [order] = await conn.query(
         `SELECT * FROM orders 
          WHERE id = ? AND userId = ? AND status = 'PENDING'`,
-        [orderId, userId]
+        [orderId, userId],
       );
 
       if (order.length === 0) {
@@ -175,7 +280,7 @@ class OrderModel {
       // Lấy các sản phẩm trong đơn hàng
       const [items] = await conn.query(
         `SELECT productId, quantity FROM order_items WHERE orderId = ?`,
-        [orderId]
+        [orderId],
       );
 
       // Hoàn trả số lượng vào kho
@@ -184,7 +289,7 @@ class OrderModel {
           `UPDATE inventories 
            SET quantity = quantity + ? 
            WHERE productId = ?`,
-          [item.quantity, item.productId]
+          [item.quantity, item.productId],
         );
       }
 
@@ -236,7 +341,7 @@ class OrderModel {
          JOIN products p ON oi.productId = p.id
          LEFT JOIN variants v ON oi.variantId = v.id
          WHERE oi.orderId = ?`,
-        [order.id]
+        [order.id],
       );
       order.items = items;
     }
@@ -254,7 +359,7 @@ class OrderModel {
       // Lấy thông tin đơn hàng hiện tại
       const [order] = await conn.query(
         `SELECT status, totalAmount FROM orders WHERE id = ?`,
-        [orderId]
+        [orderId],
       );
 
       if (order.length === 0) {
@@ -269,7 +374,7 @@ class OrderModel {
         // Lấy các sản phẩm trong đơn hàng
         const [items] = await conn.query(
           `SELECT productId, quantity FROM order_items WHERE orderId = ?`,
-          [orderId]
+          [orderId],
         );
 
         // Hoàn trả số lượng vào kho
@@ -278,7 +383,7 @@ class OrderModel {
             `UPDATE inventories 
            SET quantity = quantity + ? 
            WHERE productId = ?`,
-            [item.quantity, item.productId]
+            [item.quantity, item.productId],
           );
         }
       }
@@ -288,7 +393,7 @@ class OrderModel {
         // Kiểm tra xem đã có hóa đơn chưa
         const [existingReceipt] = await conn.query(
           `SELECT id FROM receipts WHERE order_id = ?`,
-          [orderId]
+          [orderId],
         );
 
         // Nếu chưa có hóa đơn thì tạo mới
@@ -296,7 +401,7 @@ class OrderModel {
           await conn.query(
             `INSERT INTO receipts (order_id, amount, payment_method, created_at)
            VALUES (?, ?, 'CASH', NOW())`,
-            [orderId, totalAmount]
+            [orderId, totalAmount],
           );
         }
       }
