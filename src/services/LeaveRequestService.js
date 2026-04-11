@@ -13,6 +13,19 @@ const VALID_REQUEST_TYPES = [
   "OTHER",
 ];
 
+const REQUEST_TYPE_ALIASES = {
+  ANNUAL: "ANNUAL_LEAVE",
+  ANNUAL_LEAVE: "ANNUAL_LEAVE",
+  LEAVE: "ANNUAL_LEAVE",
+  SICK: "SICK_LEAVE",
+  SICK_LEAVE: "SICK_LEAVE",
+  MATERNITY: "MATERNITY_LEAVE",
+  MATERNITY_LEAVE: "MATERNITY_LEAVE",
+  UNPAID: "UNPAID_LEAVE",
+  UNPAID_LEAVE: "UNPAID_LEAVE",
+  OTHER: "OTHER",
+};
+
 /**
  * State machine cho đơn nghỉ
  * PENDING → APPROVED | REJECTED | CANCELLED
@@ -84,6 +97,29 @@ function calculateTotalDays(startDate, endDate) {
   return diffTime / (1000 * 60 * 60 * 24) + 1;
 }
 
+function normalizeRequestType(leaveTypeCode, requestType) {
+  const normalizedLeaveTypeCode = String(leaveTypeCode || "")
+    .trim()
+    .toUpperCase();
+  const normalizedRequestType = String(requestType || "")
+    .trim()
+    .toUpperCase();
+
+  const finalRequestType =
+    REQUEST_TYPE_ALIASES[normalizedLeaveTypeCode] ||
+    REQUEST_TYPE_ALIASES[normalizedRequestType];
+
+  if (!finalRequestType || !VALID_REQUEST_TYPES.includes(finalRequestType)) {
+    const error = new Error(
+      `Loại nghỉ "${leaveTypeCode}" chưa được cấu hình request_type hợp lệ`,
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return finalRequestType;
+}
+
 // ============================================
 // NHÂN VIÊN — Self-service
 // ============================================
@@ -151,6 +187,7 @@ export async function createLeaveRequest(userId, data) {
   }
 
   const totalDays = calculateTotalDays(data.startDate, data.endDate);
+  const requestType = normalizeRequestType(leaveType.code, data.requestType);
 
   // 3. Validate không chồng ngày
   const overlap = await LeaveRequestModel.hasOverlap(
@@ -166,14 +203,14 @@ export async function createLeaveRequest(userId, data) {
     throw error;
   }
 
-  // 4. Validate attachment nếu loại nghỉ yêu cầu
-  // if (leaveType.requires_attachment && !data.attachmentUrl) {
-  //   const error = new Error(
-  //     `Loại nghỉ "${leaveType.name}" yêu cầu đính kèm giấy tờ (ví dụ: giấy khám bệnh, giấy xác nhận thai sản)`,
-  //   );
-  //   error.statusCode = 400;
-  //   throw error;
-  // }
+  // 4. Validate attachment neu loai nghi yeu cau
+  if (leaveType.requires_attachment && !data.attachmentUrl) {
+    const error = new Error(
+      `Loai nghi "${leaveType.name}" yeu cau dinh kem chung tu`,
+    );
+    error.statusCode = 400;
+    throw error;
+  }
 
   // 5. Validate max_days_per_year (nếu có)
   if (leaveType.max_days_per_year) {
@@ -198,7 +235,7 @@ export async function createLeaveRequest(userId, data) {
   const id = await LeaveRequestModel.create({
     employeeId: employee.id,
     leaveTypeId: data.leaveTypeId,
-    requestType: data.requestType,
+    requestType,
     startDate: data.startDate,
     endDate: data.endDate,
     totalDays,

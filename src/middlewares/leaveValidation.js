@@ -1,111 +1,80 @@
 import { body, param } from "express-validator";
 
-// ============================================
-// LEAVE TYPE VALIDATION
-// ============================================
-
-/**
- * Validation cho POST /leave-types — Tạo loại nghỉ phép
- */
 export const createLeaveTypeValidation = [
   body("code")
     .trim()
     .notEmpty()
-    .withMessage("Mã loại nghỉ phép là bắt buộc")
+    .withMessage("Ma loai nghi phep la bat buoc")
     .isLength({ max: 50 })
-    .withMessage("Mã loại nghỉ phép tối đa 50 ký tự")
+    .withMessage("Ma loai nghi phep toi da 50 ky tu")
     .matches(/^[A-Z0-9_]+$/)
-    .withMessage("Mã loại nghỉ phép chỉ chứa chữ in hoa, số và dấu gạch dưới"),
+    .withMessage("Ma loai nghi phep chi chua chu in hoa, so va dau gach duoi"),
 
   body("name")
     .trim()
     .notEmpty()
-    .withMessage("Tên loại nghỉ phép là bắt buộc")
+    .withMessage("Ten loai nghi phep la bat buoc")
     .isLength({ max: 100 })
-    .withMessage("Tên loại nghỉ phép tối đa 100 ký tự"),
+    .withMessage("Ten loai nghi phep toi da 100 ky tu"),
 
-  body("isPaid").optional().isBoolean().withMessage("isPaid phải là boolean"),
+  body("isPaid").optional().isBoolean().withMessage("isPaid phai la boolean"),
 
   body("requiresAttachment")
     .optional()
     .isBoolean()
-    .withMessage("requiresAttachment phải là boolean"),
+    .withMessage("requiresAttachment phai la boolean"),
 
   body("maxDaysPerYear")
     .optional({ nullable: true })
     .isInt({ min: 1 })
-    .withMessage("maxDaysPerYear phải là số nguyên dương"),
+    .withMessage("maxDaysPerYear phai la so nguyen duong"),
 
-  body("isActive")
-    .optional()
-    .isBoolean()
-    .withMessage("isActive phải là boolean"),
+  body("isActive").optional().isBoolean().withMessage("isActive phai la boolean"),
 ];
 
-/**
- * Validation cho PATCH /leave-types/:id — Cập nhật loại nghỉ phép
- */
 export const updateLeaveTypeValidation = [
-  param("id").isInt({ min: 1 }).withMessage("ID không hợp lệ"),
+  param("id").isInt({ min: 1 }).withMessage("ID khong hop le"),
 
   body("code")
     .optional()
     .trim()
     .isLength({ max: 50 })
-    .withMessage("Mã loại nghỉ phép tối đa 50 ký tự")
+    .withMessage("Ma loai nghi phep toi da 50 ky tu")
     .matches(/^[A-Z0-9_]+$/)
-    .withMessage("Mã loại nghỉ phép chỉ chứa chữ in hoa, số và dấu gạch dưới"),
+    .withMessage("Ma loai nghi phep chi chua chu in hoa, so va dau gach duoi"),
 
   body("name")
     .optional()
     .trim()
     .isLength({ max: 100 })
-    .withMessage("Tên loại nghỉ phép tối đa 100 ký tự"),
+    .withMessage("Ten loai nghi phep toi da 100 ky tu"),
 
-  body("isPaid").optional().isBoolean().withMessage("isPaid phải là boolean"),
+  body("isPaid").optional().isBoolean().withMessage("isPaid phai la boolean"),
 
   body("requiresAttachment")
     .optional()
     .isBoolean()
-    .withMessage("requiresAttachment phải là boolean"),
+    .withMessage("requiresAttachment phai la boolean"),
 
   body("maxDaysPerYear")
     .optional({ nullable: true })
     .isInt({ min: 1 })
-    .withMessage("maxDaysPerYear phải là số nguyên dương"),
+    .withMessage("maxDaysPerYear phai la so nguyen duong"),
 
-  body("isActive")
-    .optional()
-    .isBoolean()
-    .withMessage("isActive phải là boolean"),
+  body("isActive").optional().isBoolean().withMessage("isActive phai la boolean"),
 ];
 
-// ============================================
-// LEAVE REQUEST VALIDATION
-// ============================================
-
-/**
- * Validation cho POST /leave-requests — Tạo đơn nghỉ phép
- */
 export const createLeaveRequestValidation = [
   body("leaveTypeId")
     .notEmpty()
-    .withMessage("Loại nghỉ phép là bắt buộc")
+    .withMessage("Loai nghi phep la bat buoc")
     .isInt({ min: 1 })
-    .withMessage("leaveTypeId phải là số nguyên dương"),
-  //lấy loại yêu cầu mới cập nhật
-  /*
-- transaction
-- trigger
- */
+    .withMessage("leaveTypeId phai la so nguyen duong"),
+
   body("requestType")
-    .notEmpty()
-    .withMessage("Loại yêu cầu là bắt buộc")
+    .optional({ nullable: true })
+    .trim()
     .isIn([
-      "FULL_DAY",
-      "HALF_DAY_MORNING",
-      "HALF_DAY_AFTERNOON",
-      "MULTIPLE_DAYS",
       "ANNUAL_LEAVE",
       "SICK_LEAVE",
       "MATERNITY_LEAVE",
@@ -113,51 +82,48 @@ export const createLeaveRequestValidation = [
       "OTHER",
     ])
     .withMessage(
-      "requestType phải là một trong: FULL_DAY, HALF_DAY_MORNING, HALF_DAY_AFTERNOON, MULTIPLE_DAYS,SICK_LEAVE, MATERNITY_LEAVE, UNPAID_LEAVE, OTHER",
+      "requestType phai la mot trong: ANNUAL_LEAVE, SICK_LEAVE, MATERNITY_LEAVE, UNPAID_LEAVE, OTHER",
     ),
 
   body("startDate")
     .notEmpty()
-    .withMessage("Ngày bắt đầu là bắt buộc")
+    .withMessage("Ngay bat dau la bat buoc")
     .isDate()
-    .withMessage("Ngày bắt đầu không hợp lệ (YYYY-MM-DD)"),
+    .withMessage("Ngay bat dau khong hop le (YYYY-MM-DD)"),
 
   body("endDate")
     .notEmpty()
-    .withMessage("Ngày kết thúc là bắt buộc")
+    .withMessage("Ngay ket thuc la bat buoc")
     .isDate()
-    .withMessage("Ngày kết thúc không hợp lệ (YYYY-MM-DD)"),
+    .withMessage("Ngay ket thuc khong hop le (YYYY-MM-DD)"),
 
   body("totalDays")
     .notEmpty()
-    .withMessage("Tổng số ngày nghỉ là bắt buộc")
+    .withMessage("Tong so ngay nghi la bat buoc")
     .isFloat({ min: 0.5 })
-    .withMessage("Tổng số ngày nghỉ phải >= 0.5"),
+    .withMessage("Tong so ngay nghi phai >= 0.5"),
 
   body("reason")
     .trim()
     .notEmpty()
-    .withMessage("Lý do nghỉ phép là bắt buộc")
+    .withMessage("Ly do nghi phep la bat buoc")
     .isLength({ max: 500 })
-    .withMessage("Lý do tối đa 500 ký tự"),
+    .withMessage("Ly do toi da 500 ky tu"),
 
   body("attachmentUrl")
     .optional({ nullable: true })
     .trim()
     .isURL()
-    .withMessage("URL đính kèm không hợp lệ"),
+    .withMessage("URL dinh kem khong hop le"),
 ];
 
-/**
- * Validation cho PATCH /manager/leave-requests/:id/reject — Từ chối đơn
- */
 export const rejectLeaveRequestValidation = [
-  param("id").isInt({ min: 1 }).withMessage("ID không hợp lệ"),
+  param("id").isInt({ min: 1 }).withMessage("ID khong hop le"),
 
   body("rejectedReason")
     .trim()
     .notEmpty()
-    .withMessage("Lý do từ chối là bắt buộc")
+    .withMessage("Ly do tu choi la bat buoc")
     .isLength({ max: 500 })
-    .withMessage("Lý do từ chối tối đa 500 ký tự"),
+    .withMessage("Ly do tu choi toi da 500 ky tu"),
 ];
