@@ -35,6 +35,29 @@ export const updateMeValidation = [
     .isURL()
     .withMessage("Avatar URL không hợp lệ"),
 
+  body("address")
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ min: 5, max: 500 })
+    .withMessage("Địa chỉ phải có từ 5-500 ký tự"),
+
+  body("fullAddress")
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ min: 5, max: 500 })
+    .withMessage("Địa chỉ phải có từ 5-500 ký tự"),
+
+  body("receiverName")
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage("Tên người nhận phải có từ 2-100 ký tự"),
+
+  body("addressType")
+    .optional({ nullable: true })
+    .isIn(["home", "office"])
+    .withMessage("addressType chỉ nhận home hoặc office"),
+
   // Chặn các field không được phép
   body("email").not().exists().withMessage("Không được phép thay đổi email"),
   body("roleId").not().exists().withMessage("Không được phép thay đổi role"),

@@ -26,6 +26,7 @@ import attendanceRoutes from "./routes/attendance.routes.js";
 import payrollPeriodRoutes from "./routes/payrollPeriod.routes.js";
 import payrollRoutes from "./routes/payroll.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
+import addressRoutes from "./routes/address.routes.js";
 
 // Load env vars
 dotenv.config();
@@ -69,6 +70,7 @@ app.use("/api/v1/attendance", attendanceRoutes);
 app.use("/api/v1/payroll-periods", payrollPeriodRoutes);
 app.use("/api/v1/payrolls", payrollRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
+app.use("/api/v1/addresses", addressRoutes);
 // Routes
 app.get("/", (req, res) => {
   res.json({ message: "Coffee Shop API" });

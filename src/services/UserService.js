@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { pool } from "../config/db.js";
 import * as UserModel from "../models/UserModel.js";
 import * as RoleModel from "../models/RoleModel.js";
 
@@ -18,8 +19,11 @@ export async function getMe(userId) {
   }
 
   const role = await RoleModel.getRoleById(user.roleId);
+  const defaultAddress = await UserModel.getDefaultAddressByUserId(userId);
   return {
     ...user,
+    address: defaultAddress?.full_address || null,
+    defaultAddress: defaultAddress || null,
     role: role ? { id: role.id, code: role.code, name: role.name } : null,
   };
 }
@@ -45,12 +49,6 @@ export async function updateMe(userId, updateData) {
     }
   }
 
-  if (Object.keys(filteredData).length === 0) {
-    const error = new Error("Không có dữ liệu cần cập nhật");
-    error.statusCode = 400;
-    throw error;
-  }
-
   // Validate username unique nếu thay đổi
   if (filteredData.username && filteredData.username !== user.username) {
     const exists = await UserModel.isUsernameExists(
@@ -64,7 +62,66 @@ export async function updateMe(userId, updateData) {
     }
   }
 
-  await UserModel.updateUser(userId, filteredData);
+  const nextFullAddress = updateData.fullAddress || updateData.address;
+  const hasAddressUpdate = nextFullAddress !== undefined;
+
+  if (!hasAddressUpdate && Object.keys(filteredData).length === 0) {
+    const error = new Error("Không có dữ liệu cần cập nhật");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (Object.keys(filteredData).length > 0) {
+    await UserModel.updateUser(userId, filteredData);
+  }
+
+  if (hasAddressUpdate) {
+    const nextPhone =
+      updateData.phoneNumber !== undefined
+        ? updateData.phoneNumber
+        : user.phoneNumber;
+    const nextReceiver =
+      updateData.receiverName || updateData.name || user.name;
+
+    if (!nextPhone) {
+      const error = new Error(
+        "Cần phoneNumber để cập nhật địa chỉ mặc định cho hồ sơ",
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const defaultAddress = await UserModel.getDefaultAddressByUserId(userId);
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      if (!defaultAddress) {
+        await UserModel.createAddress(conn, {
+          userId,
+          receiverName: nextReceiver,
+          phoneNumber: nextPhone,
+          fullAddress: nextFullAddress,
+          addressType: updateData.addressType || "home",
+          isDefault: true,
+        });
+      } else {
+        await UserModel.updateAddress(conn, defaultAddress.id, userId, {
+          receiverName: nextReceiver,
+          phoneNumber: nextPhone,
+          fullAddress: nextFullAddress,
+          addressType: updateData.addressType || defaultAddress.address_type,
+          isDefault: true,
+        });
+      }
+      await conn.commit();
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
+  }
+
   return await getMe(userId);
 }
 

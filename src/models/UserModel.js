@@ -235,3 +235,123 @@ export async function toggleActive(userId, isActive) {
   );
   return result.affectedRows > 0;
 }
+
+// ============================================
+// ADDRESS QUERIES (Profile + Address module)
+// ============================================
+
+export async function getAddressesByUserId(userId) {
+  const [rows] = await pool.query(
+    `SELECT id, user_id, receiver_name, phone_number, full_address, is_default,
+            address_type, created_at, update_at
+     FROM addresses
+     WHERE user_id = ?
+     ORDER BY is_default DESC, created_at DESC`,
+    [userId],
+  );
+  return rows;
+}
+
+export async function getDefaultAddressByUserId(userId) {
+  const [rows] = await pool.query(
+    `SELECT id, user_id, receiver_name, phone_number, full_address, is_default,
+            address_type, created_at, update_at
+     FROM addresses
+     WHERE user_id = ? AND is_default = 1
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [userId],
+  );
+  return rows[0];
+}
+
+export async function getAddressByIdAndUserId(addressId, userId) {
+  const [rows] = await pool.query(
+    `SELECT id, user_id, receiver_name, phone_number, full_address, is_default,
+            address_type, created_at, update_at
+     FROM addresses
+     WHERE id = ? AND user_id = ?`,
+    [addressId, userId],
+  );
+  return rows[0];
+}
+
+export async function countAddressesByUserId(userId) {
+  const [rows] = await pool.query(
+    `SELECT COUNT(*) as count FROM addresses WHERE user_id = ?`,
+    [userId],
+  );
+  return rows[0]?.count || 0;
+}
+
+export async function clearDefaultAddresses(conn, userId) {
+  await conn.query(`UPDATE addresses SET is_default = 0 WHERE user_id = ?`, [
+    userId,
+  ]);
+}
+
+export async function createAddress(conn, data) {
+  const [result] = await conn.query(
+    `INSERT INTO addresses
+      (user_id, receiver_name, phone_number, full_address, is_default, address_type)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      data.userId,
+      data.receiverName,
+      data.phoneNumber,
+      data.fullAddress,
+      data.isDefault ? 1 : 0,
+      data.addressType || "home",
+    ],
+  );
+
+  const [rows] = await conn.query(
+    `SELECT id, user_id, receiver_name, phone_number, full_address, is_default,
+            address_type, created_at, update_at
+     FROM addresses
+     WHERE id = ?`,
+    [result.insertId],
+  );
+
+  return rows[0];
+}
+
+export async function updateAddress(conn, addressId, userId, data) {
+  await conn.query(
+    `UPDATE addresses
+     SET receiver_name = ?,
+         phone_number = ?,
+         full_address = ?,
+         address_type = ?,
+         is_default = ?,
+         update_at = CURRENT_TIMESTAMP
+     WHERE id = ? AND user_id = ?`,
+    [
+      data.receiverName,
+      data.phoneNumber,
+      data.fullAddress,
+      data.addressType || "home",
+      data.isDefault ? 1 : 0,
+      addressId,
+      userId,
+    ],
+  );
+
+  const [rows] = await conn.query(
+    `SELECT id, user_id, receiver_name, phone_number, full_address, is_default,
+            address_type, created_at, update_at
+     FROM addresses
+     WHERE id = ? AND user_id = ?`,
+    [addressId, userId],
+  );
+
+  return rows[0];
+}
+
+export async function deleteAddress(addressId, userId) {
+  const [result] = await pool.query(
+    `DELETE FROM addresses WHERE id = ? AND user_id = ?`,
+    [addressId, userId],
+  );
+  return result.affectedRows > 0;
+}

@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
+import { pool } from "../config/db.js";
 import * as UserModel from "../models/UserModel.js";
 import * as RoleModel from "../models/RoleModel.js";
 import * as SessionModel from "../models/SessionModel.js";
@@ -225,9 +226,12 @@ export async function getProfile(userId) {
   }
 
   const role = await RoleModel.getRoleById(user.roleId);
+  const defaultAddress = await UserModel.getDefaultAddressByUserId(userId);
 
   return {
     ...user,
+    address: defaultAddress?.full_address || null,
+    defaultAddress: defaultAddress || null,
     role: {
       id: role.id,
       code: role.code,
@@ -271,8 +275,63 @@ export async function updateProfile(userId, updateData) {
     }
   }
 
-  // Update
-  await UserModel.updateUser(userId, filteredData);
+  const nextFullAddress = updateData.fullAddress || updateData.address;
+  const hasAddressUpdate = nextFullAddress !== undefined;
+
+  if (!hasAddressUpdate && Object.keys(filteredData).length === 0) {
+    throw new Error("Không có dữ liệu cần cập nhật");
+  }
+
+  if (Object.keys(filteredData).length > 0) {
+    await UserModel.updateUser(userId, filteredData);
+  }
+
+  if (hasAddressUpdate) {
+    const nextPhone =
+      updateData.phoneNumber !== undefined
+        ? updateData.phoneNumber
+        : user.phoneNumber;
+    const nextReceiver =
+      updateData.receiverName || updateData.name || user.name;
+
+    if (!nextPhone) {
+      throw new Error("Cần phoneNumber để cập nhật địa chỉ mặc định cho hồ sơ");
+    }
+
+    const currentDefaultAddress =
+      await UserModel.getDefaultAddressByUserId(userId);
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      if (!currentDefaultAddress) {
+        await UserModel.createAddress(conn, {
+          userId,
+          receiverName: nextReceiver,
+          phoneNumber: nextPhone,
+          fullAddress: nextFullAddress,
+          addressType: updateData.addressType || "home",
+          isDefault: true,
+        });
+      } else {
+        await UserModel.updateAddress(conn, currentDefaultAddress.id, userId, {
+          receiverName: nextReceiver,
+          phoneNumber: nextPhone,
+          fullAddress: nextFullAddress,
+          addressType:
+            updateData.addressType || currentDefaultAddress.address_type,
+          isDefault: true,
+        });
+      }
+
+      await conn.commit();
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
+    }
+  }
 
   // Lấy thông tin user sau khi update
   return await getProfile(userId);
@@ -358,6 +417,11 @@ export async function revokeSession(userId, sessionId) {
  * @returns {Object} - New user
  */
 export async function register(userData) {
+  const registerAddress = userData.fullAddress || userData.address;
+  if (registerAddress && !userData.phoneNumber) {
+    throw new Error("Cần phoneNumber khi tạo địa chỉ mặc định lúc đăng ký");
+  }
+
   // Kiểm tra email tồn tại
   const existingUser = await UserModel.getUserByEmail(userData.email);
   if (existingUser) {
@@ -381,6 +445,28 @@ export async function register(userData) {
     password: hashedPassword,
     roleId: userData.roleId || 2, // Default: USER role
   });
+
+  // Nếu có địa chỉ lúc đăng ký thì tạo luôn địa chỉ mặc định đầu tiên
+  if (registerAddress) {
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      await UserModel.createAddress(conn, {
+        userId,
+        receiverName: userData.receiverName || userData.name,
+        phoneNumber: userData.phoneNumber,
+        fullAddress: registerAddress,
+        addressType: userData.addressType || "home",
+        isDefault: true,
+      });
+      await conn.commit();
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
+    }
+  }
 
   // Lấy thông tin user mới tạo
   const newUser = await getProfile(userId);
