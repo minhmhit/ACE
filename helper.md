@@ -1485,3 +1485,128 @@ curl -X GET http://localhost:3000/api/v1/category
 ---
 
 **Chúc các bạn phát triển frontend thành công! 🚀**
+
+---
+
+## 11. Update Nghiệp Vụ COD/VNPAY (06/04/2026)
+
+Phần này mô tả đúng các thay đổi backend đã áp dụng để sửa sai nghiệp vụ thanh toán.
+
+### 11.1. Các thay đổi chính
+
+- API tạo đơn `POST /orders/add` nhận thêm field optional `paymentMethodCode` với 2 giá trị: `COD` hoặc `VNPAY`.
+- Mặc định nếu không truyền `paymentMethodCode` thì backend xử lý như `COD` để không làm gãy flow cũ.
+- Với `VNPAY`, tạo đơn xong sẽ trả thêm thông tin payment (`paymentId`, `paymentUrl`, ...).
+
+### 11.2. Flow COD sau sửa
+
+Khi `paymentMethodCode = COD`:
+
+1. Tạo order.
+2. Tạo order items từ cart items được chọn.
+3. Trừ inventory ngay.
+4. Xóa/giảm item trong cart ngay.
+5. Commit.
+
+Lưu ý:
+
+- Đây là flow finalize ngay (giữ gần như logic cũ).
+- Order vẫn ở status `PENDING` theo enum hiện tại của DB.
+
+### 11.3. Flow VNPAY create order sau sửa
+
+Khi `paymentMethodCode = VNPAY`:
+
+1. Tạo order (`PENDING` - dùng như trạng thái chờ thanh toán).
+2. Tạo order items.
+3. Tạo payment transaction VNPAY (`PENDING`).
+4. Trả về `paymentUrl` để frontend redirect sang VNPay.
+
+Điểm quan trọng:
+
+- Chưa trừ inventory ở bước này.
+- Chưa xóa cart ở bước này.
+- Chưa finalize bán hàng ở bước này.
+
+### 11.4. Flow return URL sau sửa
+
+Endpoint: `GET /payments/vnpay/return`
+
+- Chỉ verify chữ ký/thông tin trả về và trả trạng thái để UI hiển thị.
+- Không update final payment/order tại đây.
+- Không trừ kho, không xóa cart tại đây.
+
+Frontend nên hiểu:
+
+- Return URL chỉ là màn hình kết quả trung gian.
+- Trạng thái cuối cùng phải dựa vào IPN hoặc gọi lại API lấy payment/order.
+
+### 11.5. Flow IPN success/fail sau sửa
+
+Endpoint: `GET /payments/vnpay/ipn`
+
+IPN success (`vnp_ResponseCode = 00`):
+
+1. Update payment -> `SUCCESS`.
+2. Finalize order:
+   - Trừ inventory theo `order_items`.
+   - Giảm/xóa cart item tương ứng.
+   - Chuyển order -> `COMPLETED`.
+3. Tạo receipt nếu chưa có.
+4. Commit transaction.
+
+IPN fail/cancel/timeout:
+
+1. Update payment -> `FAILED`.
+2. Chuyển order -> `CANCELLED`.
+3. Không trừ inventory.
+4. Không xóa cart.
+
+### 11.6. Idempotency (tránh trừ kho 2 lần)
+
+- Backend đã chặn xử lý trùng callback theo trạng thái payment/order:
+  - Nếu payment đã `SUCCESS` thì IPN lặp không finalize lại.
+  - Finalize order có check trạng thái `COMPLETED` để bỏ qua xử lý lặp.
+
+### 11.7. Request/Response mẫu cho frontend
+
+Request tạo đơn COD:
+
+```json
+{
+  "cartItems": [{ "cartItemId": 1, "productId": 10, "quantity": 2 }],
+  "shipAddress": "123 Nguyen Hue",
+  "couponId": null,
+  "paymentMethodCode": "COD"
+}
+```
+
+Request tạo đơn VNPAY:
+
+```json
+{
+  "cartItems": [{ "cartItemId": 1, "productId": 10, "quantity": 2 }],
+  "shipAddress": "123 Nguyen Hue",
+  "couponId": null,
+  "paymentMethodCode": "VNPAY"
+}
+```
+
+Response tạo đơn VNPAY (rút gọn):
+
+```json
+{
+  "success": true,
+  "message": "Đặt hàng thành công",
+  "data": {
+    "id": 123,
+    "status": "PENDING",
+    "payment": {
+      "paymentId": 456,
+      "paymentUrl": "https://sandbox.vnpayment.vn/...",
+      "orderId": 123,
+      "amount": 250000
+    }
+  }
+}
+```

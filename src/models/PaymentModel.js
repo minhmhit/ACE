@@ -108,19 +108,21 @@ export async function create(conn, data) {
  * Tạo ewallet details (trong transaction)
  */
 export async function createEwalletDetails(conn, paymentId, data) {
-  await conn.query(
-    `INSERT INTO payment_ewallet_details (payment_id, provider, transaction_id, response_code, paid_at)
-     VALUES (?, ?, ?, ?, ?)`,
-    [
-      paymentId,
-      data.provider,
-      data.transactionId || null,
-      data.responseCode || null,
-      data.paidAt,
-    ],
-  );
+  if (data.paidAt) {
+    await conn.query(
+      `INSERT INTO payment_ewallet_details (payment_id, provider, transaction_id, response_code, paid_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        paymentId,
+        data.provider,
+        data.transactionId || null,
+        data.responseCode || null,
+        data.paidAt,
+      ],
+    );
+    return;
+  }
 }
-
 /**
  * Tạo bank transfer details (trong transaction)
  */
