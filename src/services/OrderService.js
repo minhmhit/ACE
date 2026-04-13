@@ -1,6 +1,8 @@
 import OrderModel from "../models/OrderModel.js";
 import * as CartModel from "../models/CartModel.js";
 import * as PaymentService from "./PaymentService.js";
+import * as AddressService from "./AddressService.js";
+import * as UserModel from "../models/UserModel.js";
 
 class OrderService {
   // Tạo đơn hàng mới từ cart items được gửi lên
@@ -67,12 +69,54 @@ class OrderService {
         });
       }
 
+      // Xử lý địa chỉ: nếu có addressId thì lấy từ DB, nếu có newAddress thì tạo mới
+      let addressId = null;
+      let shipAddress = orderData.shipAddress || null;
+
+      if (orderData.addressId) {
+        // Verify địa chỉ thuộc về user
+        const address = await UserModel.getAddressByIdAndUserId(orderData.addressId, userId);
+        if (!address) {
+          throw new Error("Địa chỉ không tồn tại");
+        }
+        addressId = orderData.addressId;
+        shipAddress = address.full_address; // Lấy full_address từ DB
+      } else if (orderData.newAddress) {
+        // Tạo địa chỉ mới
+        const newAddressData = orderData.newAddress;
+        
+        // Kiểm tra dữ liệu bắt buộc
+        if (!newAddressData.receiverName || !newAddressData.phoneNumber || !newAddressData.fullAddress) {
+          throw new Error("Thông tin địa chỉ không đầy đủ");
+        }
+
+        try {
+          const createdAddress = await AddressService.createAddress(userId, {
+            receiverName: newAddressData.receiverName,
+            phoneNumber: newAddressData.phoneNumber,
+            fullAddress: newAddressData.fullAddress,
+            addressType: newAddressData.addressType || "home",
+            isDefault: newAddressData.isDefault || false,
+          });
+          addressId = createdAddress.id;
+          shipAddress = createdAddress.fullAddress;
+        } catch (addressError) {
+          throw new Error(`Lỗi khi tạo địa chỉ: ${addressError.message}`);
+        }
+      }
+
+      // Validate cần có ít nhất một trong hai: addressId hoặc shipAddress trực tiếp
+      if (!addressId && !shipAddress) {
+        throw new Error("Vui lòng cung cấp địa chỉ giao hàng");
+      }
+
       // Tạo đơn hàng
       const orderId = await OrderModel.createOrder(
         userId,
         {
           couponId: orderData.couponId || null,
-          shipAddress: orderData.shipAddress || null,
+          shipAddress: shipAddress || null,
+          addressId: addressId || null,
         },
         validCartItems,
         {

@@ -21,6 +21,11 @@ export async function getMyAddresses(userId) {
   return rows.map(formatAddress);
 }
 
+export async function getDefaultAddress(userId) {
+  const row = await UserModel.getDefaultAddressByUserId(userId);
+  return formatAddress(row);
+}
+
 export async function createAddress(userId, data) {
   const addressCount = await UserModel.countAddressesByUserId(userId);
   const mustBeDefault = addressCount === 0;

@@ -8,7 +8,9 @@ class OrderController {
       const orderData = {
         cartItems: req.body.cartItems, // Mảng các sản phẩm từ giỏ hàng
         couponId: req.body.couponId || null,
-        shipAddress: req.body.shipAddress || null,
+        shipAddress: req.body.shipAddress || null, // Dùng nếu user nhập trực tiếp
+        addressId: req.body.addressId || null, // ID của địa chỉ có sẵn
+        newAddress: req.body.newAddress || null, // Dữ liệu địa chỉ mới để tạo
         paymentMethodCode: req.body.paymentMethodCode || "COD",
       };
 

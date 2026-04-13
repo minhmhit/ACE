@@ -10,6 +10,21 @@ export async function getMyAddresses(req, res, next) {
   }
 }
 
+export async function getDefaultAddress(req, res, next) {
+  try {
+    const address = await AddressService.getDefaultAddress(req.user.id);
+    if (!address) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Bạn chưa có địa chỉ mặc định" 
+      });
+    }
+    res.json({ success: true, data: address });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function createAddress(req, res, next) {
   try {
     const errors = validationResult(req);

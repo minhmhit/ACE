@@ -11,6 +11,8 @@ const router = express.Router();
 
 router.get("/", authenticate, AddressController.getMyAddresses);
 
+router.get("/default", authenticate, AddressController.getDefaultAddress);
+
 router.post(
   "/",
   authenticate,

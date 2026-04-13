@@ -31,12 +31,13 @@ class OrderModel {
       // console.log(orderData);
 
       const [order] = await conn.query(
-        `INSERT INTO orders (userId, totalAmount, orderDate, shipAddress, status, couponId)
-         VALUES (?, ?, NOW(), ?, 'PENDING', ?)`,
+        `INSERT INTO orders (userId, totalAmount, orderDate, shipAddress, address_id, status, couponId)
+         VALUES (?, ?, NOW(), ?, ?, 'PENDING', ?)`,
         [
           userId,
           totalAmount,
           orderData.shipAddress || null,
+          orderData.addressId || null,
           orderData.couponId || null,
         ],
       );
