@@ -3,6 +3,7 @@ import { pool } from "../config/db.js";
 import * as EmployeeModel from "../models/EmployeeModel.js";
 import * as EmployeePositionHistoryModel from "../models/EmployeePositionHistoryModel.js";
 import * as UserModel from "../models/UserModel.js";
+import * as RoleModel from "../models/RoleModel.js";
 
 // ============================================
 // ENUMS hợp lệ
@@ -292,8 +293,6 @@ export async function update(id, data) {
     error.statusCode = 404;
     throw error;
   }
-console.log("Updating employee with data:", data);
-  // Chỉ cho phép các trường không liên quan đến position/salary
   const allowedFields = [
     "departmentId",
     "directManagerEmployeeId",
@@ -310,7 +309,6 @@ console.log("Updating employee with data:", data);
     "bankAccountName",
     "bankName",
   ];
-
   const filteredData = {};
   for (const field of allowedFields) {
     if (data[field] !== undefined) {
@@ -319,13 +317,69 @@ console.log("Updating employee with data:", data);
   }
   console.log("Filtered update data:", filteredData);
 
-  if (Object.keys(filteredData).length === 0) {
+  const allowedUserFields = [
+    "name",
+    "email",
+    "username",
+    "phoneNumber",
+    "avatarUrl",
+    "roleId",
+  ];
+  const filteredUserData = {};
+  for (const field of allowedUserFields) {
+    if (data[field] !== undefined) {
+      filteredUserData[field] = data[field];
+    }
+  }
+
+  if (
+    filteredUserData.email &&
+    filteredUserData.email !== employee.user_email &&
+    (await UserModel.isEmailExists(filteredUserData.email, employee.user_id))
+  ) {
+    const error = new Error("Email đã được sử dụng");
+    error.statusCode = 409;
+    throw error;
+  }
+
+  if (
+    filteredUserData.username &&
+    filteredUserData.username !== employee.username &&
+    (await UserModel.isUsernameExists(
+      filteredUserData.username,
+      employee.user_id,
+    ))
+  ) {
+    const error = new Error("Username đã tồn tại");
+    error.statusCode = 409;
+    throw error;
+  }
+
+  if (filteredUserData.roleId && filteredUserData.roleId !== employee.role_id) {
+    const role = await RoleModel.getRoleById(filteredUserData.roleId);
+    if (!role || !role.isActive) {
+      const error = new Error("Role không hợp lệ hoặc đã bị vô hiệu hóa");
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  if (
+    Object.keys(filteredData).length === 0 &&
+    Object.keys(filteredUserData).length === 0
+  ) {
     const error = new Error("Không có dữ liệu cần cập nhật");
     error.statusCode = 400;
     throw error;
   }
 
-  await EmployeeModel.update(id, filteredData);
+  if (Object.keys(filteredData).length > 0) {
+    await EmployeeModel.update(id, filteredData);
+  }
+  if (Object.keys(filteredUserData).length > 0) {
+    await UserModel.updateUser(employee.user_id, filteredUserData);
+  }
+
   return getById(id);
 }
 
@@ -361,3 +415,4 @@ export async function changeStatus(id, newStatus, currentUserId) {
   await EmployeeModel.update(id, updateData);
   return getById(id);
 }
+
