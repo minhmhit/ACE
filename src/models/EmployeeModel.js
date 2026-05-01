@@ -192,7 +192,7 @@ export async function create(conn, data) {
 export async function update(id, data) {
   const fields = [];
   const params = [];
-
+console.log("Updating employee with data in model:", data);
   const fieldMap = {
     departmentId: "department_id",
     directManagerEmployeeId: "direct_manager_employee_id",

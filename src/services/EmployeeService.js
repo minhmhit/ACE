@@ -108,6 +108,9 @@ export async function updateMe(userId, updateData) {
   }
 
   const allowedFields = [
+    "dateOfBirth",
+    "gender",
+    "nationalId",
     "address",
     "emergencyContactName",
     "emergencyContactPhone",
@@ -289,7 +292,7 @@ export async function update(id, data) {
     error.statusCode = 404;
     throw error;
   }
-
+console.log("Updating employee with data:", data);
   // Chỉ cho phép các trường không liên quan đến position/salary
   const allowedFields = [
     "departmentId",
@@ -314,6 +317,7 @@ export async function update(id, data) {
       filteredData[field] = data[field];
     }
   }
+  console.log("Filtered update data:", filteredData);
 
   if (Object.keys(filteredData).length === 0) {
     const error = new Error("Không có dữ liệu cần cập nhật");
