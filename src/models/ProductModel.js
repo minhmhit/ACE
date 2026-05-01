@@ -1,29 +1,43 @@
 import { pool } from "../config/db.js";
 
+const PRODUCT_BASE_SELECT = `
+  SELECT
+    p.id,
+    p.name,
+    p.description,
+    p.price,
+    p.imageUrl,
+    p.categoryId,
+    p.supplierId,
+    p.isActive,
+    c.name as categoryName,
+    s.name as supplierName,
+    s.code as supplierCode,
+    i.quantity as stockQuantity,
+    latest_import.unit_price as costPrice,
+    latest_import.unit_price as cost_price
+  FROM products p
+  LEFT JOIN categories c ON p.categoryId = c.id
+  LEFT JOIN suppliers s ON p.supplierId = s.id
+  LEFT JOIN inventories i ON p.id = i.productId
+  LEFT JOIN (
+    SELECT detail.product_id_imports, detail.unit_price
+    FROM import_details detail
+    INNER JOIN (
+      SELECT product_id_imports, MAX(id) AS latest_detail_id
+      FROM import_details
+      GROUP BY product_id_imports
+    ) latest
+      ON latest.latest_detail_id = detail.id
+  ) latest_import
+    ON latest_import.product_id_imports = p.id
+`;
+
 /**
  * Lấy danh sách tất cả sản phẩm
  */
 export async function getProducts() {
-  const [rows] = await pool.query(
-    `SELECT 
-      p.id,
-      p.name,
-      p.description,
-      p.price,
-      p.imageUrl,
-      p.categoryId,
-      p.supplierId,
-      p.isActive,
-      c.name as categoryName,
-      s.name as supplierName,
-      s.code as supplierCode,
-      i.quantity as stockQuantity
-    FROM products p 
-    LEFT JOIN categories c ON p.categoryId = c.id
-    LEFT JOIN suppliers s ON p.supplierId = s.id
-    LEFT JOIN inventories i ON p.id = i.productId
-    ORDER BY p.id DESC`
-  );
+  const [rows] = await pool.query(`${PRODUCT_BASE_SELECT} ORDER BY p.id DESC`);
 
   // Lấy variants cho từng sản phẩm
   for (let product of rows) {
@@ -48,23 +62,7 @@ export async function getProducts() {
  */
 export async function getProductsByCategory(categoryId) {
   const [rows] = await pool.query(
-    `SELECT 
-      p.id,
-      p.name,
-      p.description,
-      p.price,
-      p.imageUrl,
-      p.categoryId,
-      p.supplierId,
-      p.isActive,
-      c.name as categoryName,
-      s.name as supplierName,
-      s.code as supplierCode,
-      i.quantity as stockQuantity
-    FROM products p 
-    LEFT JOIN categories c ON p.categoryId = c.id
-    LEFT JOIN suppliers s ON p.supplierId = s.id
-    LEFT JOIN inventories i ON p.id = i.productId
+    `${PRODUCT_BASE_SELECT}
     WHERE p.categoryId = ?
     ORDER BY p.id DESC`,
     [categoryId]
@@ -94,22 +92,7 @@ export async function getProductsByCategory(categoryId) {
 export async function searchProducts(keyword) {
   const searchTerm = `%${keyword}%`;
   const [rows] = await pool.query(
-    `SELECT 
-      p.id,
-      p.name,
-      p.description,
-      p.price,
-      p.imageUrl,
-      p.categoryId,
-      p.supplierId,
-      c.name as categoryName,
-      s.name as supplierName,
-      s.code as supplierCode,
-      i.quantity as stockQuantity
-    FROM products p 
-    LEFT JOIN categories c ON p.categoryId = c.id
-    LEFT JOIN suppliers s ON p.supplierId = s.id
-    LEFT JOIN inventories i ON p.id = i.productId
+    `${PRODUCT_BASE_SELECT}
     WHERE p.name LIKE ? OR p.description LIKE ? OR c.name LIKE ?
     ORDER BY p.id DESC`,
     [searchTerm, searchTerm, searchTerm]
@@ -138,21 +121,7 @@ export async function searchProducts(keyword) {
  */
 export async function getProductById(id) {
   const [rows] = await pool.query(
-    `SELECT 
-      p.id,
-      p.name,
-      p.description,
-      p.price,
-      p.imageUrl,
-      p.categoryId,
-      p.supplierId,
-      c.name as categoryName,
-      s.name as supplierName,
-      i.quantity as stockQuantity
-    FROM products p
-    LEFT JOIN categories c ON p.categoryId = c.id
-    LEFT JOIN suppliers s ON p.supplierId = s.id
-    LEFT JOIN inventories i ON p.id = i.productId
+    `${PRODUCT_BASE_SELECT}
     WHERE p.id = ?`,
     [id]
   );
