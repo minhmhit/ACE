@@ -75,7 +75,10 @@ class OrderService {
 
       if (orderData.addressId) {
         // Verify địa chỉ thuộc về user
-        const address = await UserModel.getAddressByIdAndUserId(orderData.addressId, userId);
+        const address = await UserModel.getAddressByIdAndUserId(
+          orderData.addressId,
+          userId,
+        );
         if (!address) {
           throw new Error("Địa chỉ không tồn tại");
         }
@@ -84,9 +87,13 @@ class OrderService {
       } else if (orderData.newAddress) {
         // Tạo địa chỉ mới
         const newAddressData = orderData.newAddress;
-        
+
         // Kiểm tra dữ liệu bắt buộc
-        if (!newAddressData.receiverName || !newAddressData.phoneNumber || !newAddressData.fullAddress) {
+        if (
+          !newAddressData.receiverName ||
+          !newAddressData.phoneNumber ||
+          !newAddressData.fullAddress
+        ) {
           throw new Error("Thông tin địa chỉ không đầy đủ");
         }
 
@@ -214,6 +221,55 @@ class OrderService {
       }
 
       return await OrderModel.getOrderById(orderId);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Tạo đơn mới để thanh toán lại từ một đơn đã hủy
+  static async rePaymentCancelledOrder(userId, orderId, paymentMethodCode) {
+    try {
+      const method = paymentMethodCode || "VNPAY";
+      if (method !== "VNPAY") {
+        throw new Error("Chỉ hỗ trợ thanh toán lại qua VNPAY");
+      }
+
+      const oldOrder = await OrderModel.getOrderById(orderId, userId);
+      if (!oldOrder) {
+        throw new Error("Không tìm thấy đơn hàng");
+      }
+
+      if (oldOrder.status !== "CANCELLED") {
+        throw new Error("Chỉ có thể thanh toán lại đơn hàng đã hủy");
+      }
+
+      if (!oldOrder.items || oldOrder.items.length === 0) {
+        throw new Error("Đơn hàng không có sản phẩm để thanh toán lại");
+      }
+
+      const newOrderId = await OrderModel.createOrderFromExisting(
+        {
+          userId: oldOrder.userId,
+          totalAmount: oldOrder.totalAmount,
+          shipAddress: oldOrder.shipAddress,
+          address_id: oldOrder.address_id,
+          couponId: oldOrder.couponId,
+        },
+        oldOrder.items,
+      );
+
+      const newOrder = await OrderModel.getOrderById(newOrderId, userId);
+
+      const payment = await PaymentService.createPayment(userId, {
+        orderId: newOrderId,
+        paymentMethodCode: "VNPAY",
+        orderInfo: `Thanh toan lai don hang ${orderId}`,
+      });
+
+      return {
+        ...newOrder,
+        payment,
+      };
     } catch (error) {
       throw error;
     }

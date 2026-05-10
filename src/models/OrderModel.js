@@ -1,6 +1,46 @@
 import { pool } from "../config/db.js";
 
 class OrderModel {
+  static async cancelOrderInTransaction(conn, orderId, userId, options = {}) {
+    const { restock = true } = options;
+
+    // Kiểm tra đơn hàng
+    const [order] = await conn.query(
+      `SELECT * FROM orders 
+       WHERE id = ? AND userId = ? AND status = 'PENDING'`,
+      [orderId, userId],
+    );
+
+    if (order.length === 0) {
+      throw new Error("Không thể hủy đơn hàng này");
+    }
+
+    if (restock) {
+      // Lấy các sản phẩm trong đơn hàng
+      const [items] = await conn.query(
+        `SELECT productId, quantity FROM order_items WHERE orderId = ?`,
+        [orderId],
+      );
+
+      // Hoàn trả số lượng vào kho
+      for (const item of items) {
+        await conn.query(
+          `UPDATE inventories 
+           SET quantity = quantity + ? 
+           WHERE productId = ?`,
+          [item.quantity, item.productId],
+        );
+      }
+    }
+
+    // Cập nhật trạng thái đơn hàng
+    await conn.query(`UPDATE orders SET status = 'CANCELLED' WHERE id = ?`, [
+      orderId,
+    ]);
+
+    return true;
+  }
+
   // Tạo đơn hàng mới từ cart items
   static async createOrder(userId, orderData, cartItems, options = {}) {
     const { finalizeSale = true } = options;
@@ -262,42 +302,12 @@ class OrderModel {
   }
 
   // Hủy đơn hàng (chỉ cho phép hủy đơn PENDING)
-  static async cancelOrder(orderId, userId) {
+  static async cancelOrder(orderId, userId, options = {}) {
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
 
-      // Kiểm tra đơn hàng
-      const [order] = await conn.query(
-        `SELECT * FROM orders 
-         WHERE id = ? AND userId = ? AND status = 'PENDING'`,
-        [orderId, userId],
-      );
-
-      if (order.length === 0) {
-        throw new Error("Không thể hủy đơn hàng này");
-      }
-
-      // Lấy các sản phẩm trong đơn hàng
-      const [items] = await conn.query(
-        `SELECT productId, quantity FROM order_items WHERE orderId = ?`,
-        [orderId],
-      );
-
-      // Hoàn trả số lượng vào kho
-      for (const item of items) {
-        await conn.query(
-          `UPDATE inventories 
-           SET quantity = quantity + ? 
-           WHERE productId = ?`,
-          [item.quantity, item.productId],
-        );
-      }
-
-      // Cập nhật trạng thái đơn hàng
-      await conn.query(`UPDATE orders SET status = 'CANCELLED' WHERE id = ?`, [
-        orderId,
-      ]);
+      await OrderModel.cancelOrderInTransaction(conn, orderId, userId, options);
 
       await conn.commit();
       return true;
@@ -415,6 +425,49 @@ class OrderModel {
 
       await conn.commit();
       return true;
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
+    }
+  }
+
+  static async createOrderFromExisting(order, items) {
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      const [newOrder] = await conn.query(
+        `INSERT INTO orders (userId, totalAmount, orderDate, shipAddress, address_id, status, couponId)
+         VALUES (?, ?, NOW(), ?, ?, 'PENDING', ?)`,
+        [
+          order.userId,
+          order.totalAmount,
+          order.shipAddress || null,
+          order.address_id || null,
+          order.couponId || null,
+        ],
+      );
+
+      const newOrderId = newOrder.insertId;
+
+      for (const item of items) {
+        await conn.query(
+          `INSERT INTO order_items (orderId, productId, variantId, quantity, unitPrice)
+           VALUES (?, ?, ?, ?, ?)`,
+          [
+            newOrderId,
+            item.productId,
+            item.variantId || null,
+            item.quantity,
+            item.unitPrice,
+          ],
+        );
+      }
+
+      await conn.commit();
+      return newOrderId;
     } catch (error) {
       await conn.rollback();
       throw error;

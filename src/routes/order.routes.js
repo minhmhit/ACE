@@ -2,6 +2,7 @@ import express from "express";
 import OrderController from "../controllers/OrderController.js";
 import {
   createOrderValidation,
+  rePaymentOrderValidation,
   updateOrderStatusValidation,
 } from "../middlewares/orderValidation.js";
 import { validateResult } from "../middlewares/validator.js";
@@ -15,7 +16,7 @@ router.post(
   authenticate,
   createOrderValidation,
   validateResult,
-  OrderController.createOrder
+  OrderController.createOrder,
 );
 
 router.get("/", authenticate, OrderController.getOrders);
@@ -24,8 +25,21 @@ router.get("/:id", authenticate, OrderController.getOrderById);
 
 router.put("/:id/cancel", authenticate, OrderController.cancelOrder);
 
+router.post(
+  "/re-payment",
+  authenticate,
+  rePaymentOrderValidation,
+  validateResult,
+  OrderController.rePaymentOrder,
+);
+
 // Admin routes
-router.get("/admin/all", authenticate, authorize("ADMIN", "SALE"), OrderController.getAllOrders);
+router.get(
+  "/admin/all",
+  authenticate,
+  authorize("ADMIN", "SALE"),
+  OrderController.getAllOrders,
+);
 
 router.put(
   "/:id/status",
@@ -33,7 +47,7 @@ router.put(
   authorize("ADMIN", "SALE"),
   updateOrderStatusValidation,
   validateResult,
-  OrderController.updateOrderStatus
+  OrderController.updateOrderStatus,
 );
 
 export default router;

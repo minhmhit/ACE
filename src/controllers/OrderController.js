@@ -127,6 +127,29 @@ class OrderController {
       next(error);
     }
   }
+
+  // User: Thanh toán lại đơn hàng đã hủy
+  static async rePaymentOrder(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const orderId = parseInt(req.body.orderId);
+      const paymentMethodCode = req.body.paymentMethodCode || "VNPAY";
+
+      const order = await OrderService.rePaymentCancelledOrder(
+        userId,
+        orderId,
+        paymentMethodCode,
+      );
+
+      res.status(201).json({
+        success: true,
+        message: "Tạo đơn hàng mới để thanh toán lại thành công",
+        data: order,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default OrderController;

@@ -106,7 +106,7 @@ class VnpayService {
 
     const responseCode = vnpayReturnData.vnp_ResponseCode;
     const txnRef = vnpayReturnData.vnp_TxnRef;
-    const amount = vnpayReturnData.vnp_Amount / 100;
+    const amount = Number(vnpayReturnData.vnp_Amount) / 100;
     const transactionNo = vnpayReturnData.vnp_TransactionNo;
 
     const orderId = parseInt(txnRef.split("_")[0]);
@@ -147,36 +147,61 @@ class VnpayService {
    */
   static async handleIPN(vnpayIpnData) {
     try {
+      console.info("[VNPay][IPN] Incoming", {
+        vnp_TxnRef: vnpayIpnData.vnp_TxnRef,
+        vnp_ResponseCode: vnpayIpnData.vnp_ResponseCode,
+        vnp_Amount: vnpayIpnData.vnp_Amount,
+        vnp_TransactionNo: vnpayIpnData.vnp_TransactionNo,
+      });
+
       const isValid = vnpay.verifyReturnUrl(vnpayIpnData);
       if (!isValid) {
+        console.warn("[VNPay][IPN] Invalid signature");
         return { RspCode: "97", Message: "Invalid Signature" };
       }
 
       const responseCode = vnpayIpnData.vnp_ResponseCode;
       const txnRef = vnpayIpnData.vnp_TxnRef;
-      const amount = vnpayIpnData.vnp_Amount / 100;
+      const amount = Number(vnpayIpnData.vnp_Amount) / 100;
       const orderId = parseInt(txnRef.split("_")[0]);
 
       const order = await PaymentModel.getOrderById(orderId);
       if (!order) {
+        console.warn("[VNPay][IPN] Order not found", { orderId });
         return { RspCode: "01", Message: "Order not found" };
       }
 
-      if (amount !== order.totalAmount) {
+      const orderAmount = Number(order.totalAmount);
+      if (amount !== orderAmount) {
+        console.warn("[VNPay][IPN] Invalid amount", {
+          orderId,
+          amount,
+          expected: orderAmount,
+        });
         return { RspCode: "04", Message: "Invalid amount" };
       }
 
       const payment = await PaymentModel.getByOrderId(orderId);
       if (!payment) {
+        console.warn("[VNPay][IPN] Payment not found", { orderId });
         return { RspCode: "01", Message: "Payment not found" };
       }
 
       if (payment.status === "SUCCESS") {
+        console.info("[VNPay][IPN] Payment already success", {
+          orderId,
+          paymentId: payment.payment_id,
+        });
         return { RspCode: "02", Message: "Order already confirmed" };
       }
 
       if (responseCode === "00") {
         if (payment.status !== "PENDING") {
+          console.info("[VNPay][IPN] Payment not pending", {
+            orderId,
+            paymentId: payment.payment_id,
+            status: payment.status,
+          });
           return { RspCode: "02", Message: "Order already confirmed" };
         }
 
@@ -189,6 +214,11 @@ class VnpayService {
             payment.payment_id,
             "SUCCESS",
           );
+
+          console.info("[VNPay][IPN] Finalizing order", {
+            orderId,
+            paymentId: payment.payment_id,
+          });
 
           // Finalize nghiệp vụ bán hàng tại IPN success
           await OrderModel.finalizeOrderAfterPayment(conn, orderId);
@@ -224,6 +254,11 @@ class VnpayService {
             [orderId],
           );
 
+          console.info("[VNPay][IPN] Order finalized", {
+            orderId,
+            paymentId: payment.payment_id,
+          });
+
           await conn.commit();
         } catch (err) {
           await conn.rollback();
@@ -237,15 +272,23 @@ class VnpayService {
           const conn = await pool.getConnection();
           try {
             await conn.beginTransaction();
+            console.info("[VNPay][IPN] Payment failed, cancelling order", {
+              orderId,
+              paymentId: payment.payment_id,
+              responseCode,
+            });
             await PaymentModel.updateStatusConn(
               conn,
               payment.payment_id,
               "FAILED",
             );
-            await PaymentModel.updateOrderStatusConn(
+            await OrderModel.cancelOrderInTransaction(
               conn,
               orderId,
-              "CANCELLED",
+              order.userId,
+              {
+                restock: false,
+              },
             );
             await conn.query(
               `UPDATE payment_ewallet_details

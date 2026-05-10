@@ -39,7 +39,7 @@ export const createOrderValidation = [
   body("address_id")
     .optional({ nullable: true })
     .isInt({ min: 1 })
-    .withMessage("ID địa chỉ không hợp lệ")
+    .withMessage("ID địa chỉ không hợp lệ"),
 ];
 
 export const updateOrderStatusValidation = [
@@ -48,4 +48,12 @@ export const updateOrderStatusValidation = [
     .withMessage("Trạng thái đơn hàng không được để trống")
     .isIn(["PENDING", "COMPLETED", "CANCELLED", "SHIPPING"])
     .withMessage("Trạng thái đơn hàng không hợp lệ"),
+];
+
+export const rePaymentOrderValidation = [
+  body("orderId").isInt({ min: 1 }).withMessage("ID đơn hàng không hợp lệ"),
+  body("paymentMethodCode")
+    .optional()
+    .isIn(["VNPAY"])
+    .withMessage("Chỉ hỗ trợ thanh toán lại qua VNPAY"),
 ];
