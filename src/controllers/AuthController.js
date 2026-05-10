@@ -312,3 +312,34 @@ export async function revokeSession(req, res, next) {
     });
   }
 }
+
+/**
+ * POST /auth/forgot-password
+ * Reset mật khẩu bằng username → password = Sdt@123456
+ */
+export async function forgotPassword(req, res, next) {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        error: "Validation failed",
+        errors: errors.array(),
+      });
+    }
+
+    const { username } = req.body;
+    const result = await AuthService.resetPasswordByUsername(username);
+
+    res.json({
+      success: true,
+      message: result.message,
+      hint: result.hint,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: "Đặt lại mật khẩu thất bại",
+      message: error.message,
+    });
+  }
+}

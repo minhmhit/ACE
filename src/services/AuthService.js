@@ -472,3 +472,51 @@ export async function register(userData) {
   const newUser = await getProfile(userId);
   return newUser;
 }
+
+/**
+ * Reset password bằng username
+ * Mật khẩu mới = {SĐT}@123456
+ * @param {string} username - Username hoặc email
+ * @returns {Object} - Thông báo mật khẩu mới (đã mask SĐT)
+ */
+export async function resetPasswordByUsername(username) {
+  // Tìm user theo username hoặc email
+  let user = await UserModel.getUserByUsername(username);
+  if (!user) {
+    user = await UserModel.getUserByEmail(username);
+  }
+
+  if (!user) {
+    throw new Error("Không tìm thấy tài khoản với username này");
+  }
+
+  if (!user.isActive) {
+    throw new Error("Tài khoản đã bị vô hiệu hóa");
+  }
+
+  // Lấy SĐT
+  const phone = user.phoneNumber;
+  if (!phone) {
+    throw new Error(
+      "Tài khoản chưa đăng ký số điện thoại, không thể đặt lại mật khẩu. Vui lòng liên hệ quản trị viên."
+    );
+  }
+
+  // Tạo mật khẩu mới: Sdt@123456
+  const newPassword = `${phone}@123456`;
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  // Cập nhật mật khẩu
+  await UserModel.updatePassword(user.id, hashedPassword);
+
+  // Revoke tất cả sessions để buộc đăng nhập lại
+  await SessionModel.revokeAllUserSessions(user.id);
+
+  // Mask SĐT để hiển thị cho user (chỉ hiện 3 số cuối)
+  const maskedPhone = phone.replace(/.(?=.{3})/g, "*");
+
+  return {
+    message: `Mật khẩu đã được đặt lại thành công`,
+    hint: `Mật khẩu mới: ${maskedPhone}@123456`,
+  };
+}

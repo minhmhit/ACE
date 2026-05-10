@@ -199,3 +199,16 @@ export const changePasswordValidation = [
       return true;
     }),
 ];
+
+/**
+ * Validation cho forgot password (reset bằng username)
+ */
+export const forgotPasswordValidation = [
+  body("username")
+    .trim()
+    .notEmpty()
+    .withMessage("Username không được để trống")
+    .isLength({ min: 3, max: 50 })
+    .withMessage("Username phải có từ 3-50 ký tự"),
+];
+

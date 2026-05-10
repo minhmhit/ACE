@@ -9,7 +9,7 @@ export const createCategoryValidation = [
     .withMessage("Tên danh mục phải có ít nhất 2 ký tự"),
 
   body("description")
-    .optional()
+    .optional({ checkFalsy: true }) // bỏ qua nếu rỗng hoặc không có
     .trim()
     .isLength({ min: 10 })
     .withMessage("Mô tả phải có ít nhất 10 ký tự"),
@@ -35,13 +35,20 @@ export const updateCategoryValidation = [
     .withMessage("Tên danh mục phải có ít nhất 2 ký tự"),
 
   body("description")
-    .optional()
+    .optional({ checkFalsy: true }) // bỏ qua nếu rỗng hoặc không có
     .trim()
     .isLength({ min: 10 })
     .withMessage("Mô tả phải có ít nhất 10 ký tự"),
 
   body("parentId")
-    .optional()
-    .isInt()
-    .withMessage("ID danh mục cha không hợp lệ"),
+    .optional({ nullable: true })
+    .custom((value) => {
+      if (value === null || value === undefined || value === "") {
+        return true;
+      }
+      if (!Number.isInteger(Number(value)) || Number(value) <= 0) {
+        throw new Error("ID danh mục cha không hợp lệ");
+      }
+      return true;
+    }),
 ];
