@@ -36,12 +36,15 @@ export const createProductValidation = [
   body("imageUrl")
     .optional()
     .custom((value) => {
-      // Cho phép: URL tuyệt đối hoặc đường dẫn tương đối ./asset/img/
-      const isHttpUrl = /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(value);
-      const isLocalPath = /^(\.\/|\/)?(asset|uploads|images)\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(value);
+      // Bỏ qua nếu rỗng
+      if (!value || value.trim() === "") return true;
+      // Cho phép: URL tuyệt đối (http/https, kể cả CDN không có đuôi file)
+      const isHttpUrl = /^https?:\/\/.+/i.test(value);
+      // Cho phép: đường dẫn tương đối local asset/uploads/images/public
+      const isLocalPath = /^(\.\/|\/?)?(asset|uploads|images|public)\/.+/i.test(value);
 
       if (!isHttpUrl && !isLocalPath) {
-        throw new Error('Đường dẫn hình ảnh không hợp lệ');
+        throw new Error("Đường dẫn hình ảnh không hợp lệ");
       }
       return true;
     })
@@ -75,14 +78,13 @@ export const updateProductValidation = [
 
   body("imageUrl")
     .optional()
-    .optional()
     .custom((value) => {
-      // Cho phép: URL tuyệt đối hoặc đường dẫn tương đối ./asset/img/
-      const isHttpUrl = /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(value);
-      const isLocalPath =
-        /^(\.\/|\/)?(asset|uploads|images)\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(
-          value
-        );
+      // Bỏ qua nếu rỗng
+      if (!value || value.trim() === "") return true;
+      // Cho phép: URL tuyệt đối (http/https, kể cả CDN không có đuôi file)
+      const isHttpUrl = /^https?:\/\/.+/i.test(value);
+      // Cho phép: đường dẫn tương đối local asset/uploads/images/public
+      const isLocalPath = /^(\.\/|\/?)?(asset|uploads|images|public)\/.+/i.test(value);
 
       if (!isHttpUrl && !isLocalPath) {
         throw new Error("Đường dẫn hình ảnh không hợp lệ");

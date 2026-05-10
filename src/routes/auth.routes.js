@@ -7,6 +7,7 @@ import {
   refreshTokenValidation,
   updateProfileValidation,
   changePasswordValidation,
+  forgotPasswordValidation,
 } from "../middlewares/authValidation.js";
 
 const router = express.Router();
@@ -35,6 +36,13 @@ router.post("/login", loginValidation, AuthController.login);
  * Response: accessToken, refreshToken (mới)
  */
 router.post("/refresh", refreshTokenValidation, AuthController.refreshToken);
+
+/**
+ * POST /auth/forgot-password
+ * Reset mật khẩu bằng username → password = Sdt@123456
+ * Body: { username }
+ */
+router.post("/forgot-password", forgotPasswordValidation, AuthController.forgotPassword);
 
 // ============================================
 // PROTECTED ROUTES (Yêu cầu authentication)
