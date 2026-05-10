@@ -315,7 +315,6 @@ export async function update(id, data) {
       filteredData[field] = data[field];
     }
   }
-  console.log("Filtered update data:", filteredData);
 
   const allowedUserFields = [
     "name",

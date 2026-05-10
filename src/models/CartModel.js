@@ -66,7 +66,6 @@ export async function addToCart(
   if (existingItems.length > 0) {
     // Nếu có rồi thì cập nhật số lượng
     const newQuantity = Number(existingItems[0].quantity) + Number(quantity);
-    console.log(newQuantity);
     await pool.query("UPDATE cart_items SET quantity = ? WHERE id = ?", [
       newQuantity,
       existingItems[0].id,
